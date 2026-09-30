@@ -12,7 +12,7 @@ from datetime import datetime
 
 import joblib
 import numpy as np
-from fastapi import FastAPI, File, HTTPException, UploadFile, Query
+from fastapi import FastAPI, File, HTTPException, UploadFile, Query, APIRouter, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -42,7 +42,10 @@ from backend.db.database import (
 )
 
 # Initialize database on startup
-init_db()
+try:
+    init_db()
+except Exception as e:
+    print(f"Warning: init_db encountered: {e}")
 
 app = FastAPI(
     title="AgriLink Platform API",
@@ -58,6 +61,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def vercel_path_middleware(request: Request, call_next):
+    path = request.scope.get("path", "")
+    for prefix in ["/api/index.py", "/index.py"]:
+        if path.startswith(prefix):
+            new_path = path[len(prefix):] or "/"
+            request.scope["path"] = new_path
+            break
+    return await call_next(request)
+
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND_FILE = next(
@@ -80,7 +95,6 @@ MODEL_PATHS = [
     os.path.join(PROJECT_ROOT, "crop_model.pkl")
 ]
 _model_bundle = None
-
 
 
 def get_model_bundle():
@@ -157,10 +171,13 @@ class AIChatRequest(BaseModel):
 
 
 # ==========================================
-# ENDPOINTS
+# ROUTER & ENDPOINTS
 # ==========================================
 
-@app.get("/health")
+router = APIRouter()
+
+
+@router.get("/health")
 def health_check():
     return {
         "status": "healthy",
@@ -183,20 +200,15 @@ def health_check():
     }
 
 
-@app.get("/", include_in_schema=False)
-def serve_frontend():
-    return FileResponse(FRONTEND_FILE, media_type="text/html")
-
-
 # ---------- 1. WEATHER SERVICE ----------
-@app.get("/api/weather")
+@router.get("/weather")
 async def get_weather(lat: float = Query(17.3850), lon: float = Query(78.4867)):
     """Fetches live meteorological conditions and 7-day forecast from Open-Meteo."""
     return await fetch_weather(lat=lat, lon=lon)
 
 
 # ---------- 2. SOIL SERVICE ----------
-@app.get("/api/soil")
+@router.get("/soil")
 def get_soil(
     region: Optional[str] = Query("Telangana"),
     ph: Optional[float] = None,
@@ -217,15 +229,15 @@ def get_soil(
 
 
 # ---------- 3. SATELLITE & REMOTE SENSING ----------
-@app.get("/api/satellite")
+@router.get("/satellite")
 def get_satellite(lat: float = Query(17.3850), lon: float = Query(78.4867), region: Optional[str] = Query("Telangana")):
     """Retrieves remote sensing vegetation indices (NDVI, soil moisture, LST) with clear data provenance."""
     return get_satellite_data(lat=lat, lon=lon, region=region)
 
 
 # ---------- 4. CROP RECOMMENDATION ENGINE ----------
-@app.post("/api/crop-recommendation")
-@app.post("/api/advisory")
+@router.post("/crop-recommendation")
+@router.post("/advisory")
 def crop_recommendation_endpoint(req: CropRecommendationRequest):
     """
     ML-driven crop suitability classifier with multi-factor explainability.
@@ -255,7 +267,6 @@ def crop_recommendation_endpoint(req: CropRecommendationRequest):
     top_crop = str(classes[order[0]])
     top_conf = float(probs[order[0]])
 
-    # Generate explainable reasons comparing user input with crop agronomic ranges
     input_params_dict = {
         "ph": req.ph,
         "temperature": req.temperature,
@@ -281,20 +292,20 @@ def crop_recommendation_endpoint(req: CropRecommendationRequest):
         })
 
     regen_tip = regen_tips.get(top_crop, "Adopt cover cropping and conservation tillage to regenerate soil biology.")
-
-    # Localized crop title
     crop_localized = CROP_NAMES_TRANSLATION.get(top_crop, {}).get(req.language or "en", top_crop.capitalize())
 
-    # Log to DB if farm_id is present
     if req.farm_id:
-        log_advisory(
-            farm_id=req.farm_id,
-            recommended_crop=top_crop,
-            confidence=round(top_conf, 3),
-            reasons=reasons,
-            advisory_text=regen_tip,
-            language=req.language or "en"
-        )
+        try:
+            log_advisory(
+                farm_id=req.farm_id,
+                recommended_crop=top_crop,
+                confidence=round(top_conf, 3),
+                reasons=reasons,
+                advisory_text=regen_tip,
+                language=req.language or "en"
+            )
+        except Exception:
+            pass
 
     return {
         "recommended_crop": top_crop,
@@ -309,7 +320,7 @@ def crop_recommendation_endpoint(req: CropRecommendationRequest):
 
 
 # ---------- 5. CROP DISEASE DETECTION ----------
-@app.post("/api/disease")
+@router.post("/disease")
 async def disease_diagnostic_endpoint(file: UploadFile = File(...), farm_id: Optional[str] = Query(None)):
     """Vision-based crop leaf disease classifier with visual symptom metrics and safety disclaimers."""
     if not file.content_type or not file.content_type.startswith("image/"):
@@ -321,22 +332,24 @@ async def disease_diagnostic_endpoint(file: UploadFile = File(...), farm_id: Opt
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed processing image: {e}")
 
-    # Log scan to DB
-    log_disease_scan(
-        farm_id=farm_id,
-        image_name=file.filename or "leaf_upload.jpg",
-        crop_name=result.get("crop", "General Crop"),
-        disease_name=result.get("diagnosis", "Unknown"),
-        confidence=result.get("confidence", 0.0),
-        severity=result.get("severity", "Moderate"),
-        action="; ".join(result.get("recommended_actions", []))
-    )
+    try:
+        log_disease_scan(
+            farm_id=farm_id,
+            image_name=file.filename or "leaf_upload.jpg",
+            crop_name=result.get("crop", "General Crop"),
+            disease_name=result.get("diagnosis", "Unknown"),
+            confidence=result.get("confidence", 0.0),
+            severity=result.get("severity", "Moderate"),
+            action="; ".join(result.get("recommended_actions", []))
+        )
+    except Exception:
+        pass
 
     return result
 
 
 # ---------- 6. AI AGRICULTURAL ADVISOR ----------
-@app.post("/api/ai-advisory")
+@router.post("/ai-advisory")
 async def ai_advisory_endpoint(req: AIAdvisoryRequest):
     """Synthesizes verified sensor, soil, weather, crop, and disease data into a cohesive advisory."""
     return await generate_ai_advisory(
@@ -350,7 +363,7 @@ async def ai_advisory_endpoint(req: AIAdvisoryRequest):
     )
 
 
-@app.post("/api/ai-chat")
+@router.post("/ai-chat")
 async def ai_chat_endpoint(req: AIChatRequest):
     """Answers a farmer's specific question with Vertex AI Gemini and verified farm context."""
     farm_info = {
@@ -394,13 +407,13 @@ async def ai_chat_endpoint(req: AIChatRequest):
 
 
 # ---------- 7. INTEROPERABILITY & STANDARDS ----------
-@app.get("/api/schema")
+@router.get("/schema")
 def get_interoperability_schema():
     """Returns the standardized AgriData JSON schema specification."""
     return AGRIDATA_SCHEMA_SPEC
 
 
-@app.post("/api/interop/export")
+@router.post("/interop/export")
 def export_standard_agridata(
     country: str = "IND",
     region: str = "Telangana",
@@ -427,39 +440,49 @@ def export_standard_agridata(
     )
 
 
-@app.post("/api/interop/validate")
+@router.post("/interop/validate")
 def validate_agridata(payload: Dict[str, Any]):
     """Validates an incoming foreign agricultural data payload against the AgriData schema."""
     return validate_agridata_payload(payload)
 
 
-@app.get("/api/interop/sample-nodes")
+@router.get("/interop/sample-nodes")
 def get_sample_interop_nodes():
     """Returns sample cross-border agricultural nodes participating in the network."""
     return get_sample_crossborder_records()
 
 
 # ---------- 8. FARMS & PERSISTENCE ----------
-@app.get("/api/farms")
+@router.get("/farms")
 def get_farms_endpoint():
     """Lists saved farms in the platform database."""
     return list_farms()
 
 
-@app.post("/api/farms")
+@router.post("/farms")
 def create_farm_endpoint(farm: FarmCreateRequest):
     """Registers or updates a farm profile."""
     return save_farm(farm.dict())
 
 
-@app.get("/api/history")
+@router.get("/history")
 def get_history_endpoint(limit: int = Query(10, ge=1, le=50)):
     """Retrieves recent advisories and disease scans."""
     return get_recent_history(limit=limit)
 
 
 # ---------- 9. LOCALIZATION ----------
-@app.get("/api/locales")
+@router.get("/locales")
 def get_locales(lang: str = Query("en")):
     """Returns localized UI strings and crop dictionaries for English, Telugu, and Hindi."""
     return get_translation_bundle(lang=lang)
+
+
+# Mount router for both /api prefix and root prefix
+app.include_router(router, prefix="/api")
+app.include_router(router)
+
+
+@app.get("/", include_in_schema=False)
+def serve_frontend():
+    return FileResponse(FRONTEND_FILE, media_type="text/html")
