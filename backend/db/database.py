@@ -6,16 +6,37 @@ Lightweight, zero-dependency persistence for farms, observations, advisories, an
 import sqlite3
 import os
 import json
+import shutil
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "agrilink.db")
+# In serverless environments (e.g., Vercel / AWS Lambda), the deployment root is read-only.
+# We store the working SQLite database in /tmp.
+IS_SERVERLESS = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or os.environ.get("LAMBDA_TASK_ROOT"))
+
+if IS_SERVERLESS:
+    DB_PATH = "/tmp/agrilink.db"
+    seed_db = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "agrilink.db")
+    if not os.path.exists(DB_PATH) and os.path.exists(seed_db):
+        try:
+            shutil.copy2(seed_db, DB_PATH)
+        except Exception:
+            pass
+else:
+    DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "agrilink.db")
 
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
+    except Exception:
+        # Fallback in case of disk permission issues
+        conn = sqlite3.connect(":memory:")
+        conn.row_factory = sqlite3.Row
+        return conn
+
 
 
 def init_db():

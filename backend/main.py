@@ -60,17 +60,27 @@ app.add_middleware(
 )
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FRONTEND_FILE = os.path.join(PROJECT_ROOT, "frontend_index.html")
-FRONTEND_ASSETS = os.path.join(PROJECT_ROOT, "frontend", "assets")
-app.mount("/assets", StaticFiles(directory=FRONTEND_ASSETS), name="assets")
+FRONTEND_FILE = next(
+    (os.path.join(PROJECT_ROOT, f) for f in ["index.html", "frontend_index.html", "frontend/index.html"] if os.path.exists(os.path.join(PROJECT_ROOT, f))),
+    os.path.join(PROJECT_ROOT, "frontend_index.html")
+)
+FRONTEND_ASSETS = next(
+    (os.path.join(PROJECT_ROOT, d) for d in ["assets", "frontend/assets"] if os.path.isdir(os.path.join(PROJECT_ROOT, d))),
+    os.path.join(PROJECT_ROOT, "frontend", "assets")
+)
+if os.path.isdir(FRONTEND_ASSETS):
+    app.mount("/assets", StaticFiles(directory=FRONTEND_ASSETS), name="assets")
 
 # Load Trained Crop Model Bundle
 MODEL_PATHS = [
-    os.path.join(os.path.dirname(__file__), "models", "crop_model.pkl"),
-    os.path.join(os.path.dirname(__file__), "crop_model.pkl"),
-    os.path.join(os.path.dirname(os.path.dirname(__file__)), "crop_model.pkl")
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "crop_model.pkl"),
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "crop_model.pkl"),
+    os.path.join(PROJECT_ROOT, "backend", "models", "crop_model.pkl"),
+    os.path.join(PROJECT_ROOT, "backend", "crop_model.pkl"),
+    os.path.join(PROJECT_ROOT, "crop_model.pkl")
 ]
 _model_bundle = None
+
 
 
 def get_model_bundle():
