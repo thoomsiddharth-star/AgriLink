@@ -1982,7 +1982,65 @@ const FARMS_DB = {
   "farm-ka-05": { name: "Dharwad Agro Field", region: "Karnataka", lat: 15.3647, lon: 75.1240, area: 5.0, soil: "Red Laterite Soil (Oxisol)" }
 };
 
-function switchFarmProfile(farmId) {
+async function fetchFarmsFromDB() {
+  try {
+    const res = await fetch(`${API_URL}/api/farms`);
+    if (res.ok) {
+      const farms = await res.json();
+      if (Array.isArray(farms) && farms.length > 0) {
+        farms.forEach(f => {
+          FARMS_DB[f.id] = {
+            name: f.name,
+            region: f.region,
+            lat: f.latitude || f.lat || 17.3850,
+            lon: f.longitude || f.lon || 78.4867,
+            area: f.area_acres || f.area || 5.0,
+            soil: f.soil_type || f.soil || "Black Cotton Soil"
+          };
+        });
+        populateFarmDropdown();
+      }
+    }
+  } catch (err) {
+    console.warn("Farms API fetch error:", err);
+  }
+}
+
+function populateFarmDropdown() {
+  const dropdown = document.getElementById("farmSelectorDropdown");
+  if (!dropdown) return;
+  dropdown.innerHTML = "";
+  Object.keys(FARMS_DB).forEach(id => {
+    const f = FARMS_DB[id];
+    const opt = document.createElement("option");
+    opt.value = id;
+    opt.textContent = `🌾 ${f.name} (${f.region})`;
+    if (id === appStore.farm.id) opt.selected = true;
+    dropdown.appendChild(opt);
+  });
+}
+
+async function fetchRegionalSoil(region) {
+  try {
+    const res = await fetch(`${API_URL}/api/soil?region=${encodeURIComponent(region || appStore.farm.region)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.recommended_profile) {
+        appStore.soil.ph = data.recommended_profile.ph ?? appStore.soil.ph;
+        appStore.soil.nitrogen = data.recommended_profile.nitrogen ?? appStore.soil.nitrogen;
+        appStore.soil.phosphorus = data.recommended_profile.phosphorus ?? appStore.soil.phosphorus;
+        appStore.soil.potassium = data.recommended_profile.potassium ?? appStore.soil.potassium;
+        appStore.soil.moisture = data.recommended_profile.moisture ?? appStore.soil.moisture;
+        appStore.soil.soilType = data.soil_type || appStore.soil.soilType;
+        updateSoilUI();
+      }
+    }
+  } catch (err) {
+    console.warn("Soil API fetch error:", err);
+  }
+}
+
+async function switchFarmProfile(farmId) {
   const f = FARMS_DB[farmId];
   if (!f) return;
 
@@ -2012,40 +2070,63 @@ function switchFarmProfile(farmId) {
 
   fetchWeather();
   fetchSatellite();
+  await fetchRegionalSoil(f.region);
   showToast(`🌾 Switched to ${f.name} (${f.region})`);
+  triggerFarmAnalysis(false);
 }
 
 function openAddFarmModal() { openModal('modalAddFarm'); }
-function handleSaveNewFarm(e) {
+async function handleSaveNewFarm(e) {
   e.preventDefault();
   const name = document.getElementById("mFarmName").value;
   const region = document.getElementById("mFarmRegion").value;
   const area = parseFloat(document.getElementById("mFarmArea").value);
 
   const newId = `farm-custom-${Date.now()}`;
-  FARMS_DB[newId] = { name: name, region: region, lat: 17.3850, lon: 78.4867, area: area, soil: "Standard Loam" };
+  const newFarmPayload = {
+    id: newId,
+    name: name,
+    region: region,
+    latitude: 17.3850,
+    longitude: 78.4867,
+    area_acres: area,
+    soil_type: "Black Cotton Soil"
+  };
 
-  const opt = document.createElement("option");
-  opt.value = newId;
-  opt.textContent = `🌾 ${name} (${region})`;
-  opt.selected = true;
-  document.getElementById("farmSelectorDropdown").appendChild(opt);
+  FARMS_DB[newId] = { name: name, region: region, lat: 17.3850, lon: 78.4867, area: area, soil: "Black Cotton Soil" };
 
+  try {
+    await fetch(`${API_URL}/api/farms`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newFarmPayload)
+    });
+  } catch (err) {
+    console.warn("Save farm API error:", err);
+  }
+
+  populateFarmDropdown();
   closeModal('modalAddFarm');
-  switchFarmProfile(newId);
-  showToast(`✅ Created new farm '${name}'!`);
+  await switchFarmProfile(newId);
+  showToast(`✅ Created and synced farm '${name}'!`);
 }
 
-function changeLanguage(lang) {
+async function changeLanguage(lang) {
   appStore.language = lang;
+  try {
+    await fetch(`${API_URL}/api/locales?lang=${lang}`);
+  } catch (err) {
+    console.warn("Locale fetch error:", err);
+  }
   showToast(`Language set to ${lang === 'te' ? 'Telugu (తెలుగు)' : lang === 'hi' ? 'Hindi (हिन्दी)' : 'English'}`);
 }
 
 // ==========================================
 // INITIAL STARTUP
 // ==========================================
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
   initLeafletMap();
+  await fetchFarmsFromDB();
   fetchWeather();
   fetchSatellite();
   updateSoilUI();
