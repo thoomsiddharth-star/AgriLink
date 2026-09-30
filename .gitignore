@@ -10,3 +10,4 @@ __pycache__/
 *.sqlite3
 agrilink.zip
 backend/crop_model.pkl
+.vercel
