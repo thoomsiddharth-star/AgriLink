@@ -38,6 +38,12 @@ def run_tests():
     r = client.get("/health")
     assert_test("Health Endpoint (/health)", r.status_code == 200 and r.json().get("status") == "healthy")
 
+    # Unified Cloud Run deployment serves the frontend and its assets from FastAPI.
+    r = client.get("/")
+    assert_test("Frontend served at service root", r.status_code == 200 and "text/html" in r.headers.get("content-type", "") and "window.location.origin" in r.text)
+    r = client.get("/assets/sample_healthy_rice.jpg")
+    assert_test("Frontend demo assets served by backend", r.status_code == 200 and r.headers.get("content-type") == "image/jpeg")
+
     # 2. Weather
     r = client.get("/api/weather?lat=17.3850&lon=78.4867")
     assert_test("Weather Endpoint (/api/weather)", r.status_code == 200 and "current" in r.json() and "forecast" in r.json(), f"(Source: {r.json().get('source')})")

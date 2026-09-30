@@ -56,6 +56,17 @@ The dashboard chat sends each question to `/api/ai-chat` using Vertex AI and App
 ### 3. Launching Frontend Dashboard
 Open `frontend/index.html` (or `frontend_index.html`) in any modern browser.
 
+### 4. Deploy Frontend and Backend Together to Cloud Run
+The Docker image runs FastAPI and serves `frontend_index.html` from `/`, so deploying the frontend also deploys its API. The frontend automatically uses the same origin for `/api/...` calls. Set a minimum instance count of 1 to keep the backend started and ready after deployment; this incurs idle-instance charges.
+
+Enable the required APIs and deploy from the repository root:
+```powershell
+gcloud config set project YOUR_PROJECT_ID
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com aiplatform.googleapis.com
+gcloud run deploy agrilink --source . --region us-central1 --allow-unauthenticated --min 1 --set-env-vars GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_CLOUD_LOCATION=global
+```
+Grant the Cloud Run runtime service account the `roles/aiplatform.user` role. The deploy command prints the public dashboard URL; the FastAPI backend is the process serving that URL and its `/api/...` routes. The Cloud Run container's local SQLite database is ephemeral, so persistent production farm history requires a managed database.
+
 ---
 
 ## 🧪 Running Automated Test Suite

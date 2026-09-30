@@ -14,6 +14,8 @@ import joblib
 import numpy as np
 from fastapi import FastAPI, File, HTTPException, UploadFile, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 # Internal services & database
@@ -56,6 +58,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FRONTEND_FILE = os.path.join(PROJECT_ROOT, "frontend_index.html")
+FRONTEND_ASSETS = os.path.join(PROJECT_ROOT, "frontend", "assets")
+app.mount("/assets", StaticFiles(directory=FRONTEND_ASSETS), name="assets")
 
 # Load Trained Crop Model Bundle
 MODEL_PATHS = [
@@ -144,7 +151,6 @@ class AIChatRequest(BaseModel):
 # ==========================================
 
 @app.get("/health")
-@app.get("/")
 def health_check():
     return {
         "status": "healthy",
@@ -165,6 +171,11 @@ def health_check():
             "locales": "/api/locales"
         }
     }
+
+
+@app.get("/", include_in_schema=False)
+def serve_frontend():
+    return FileResponse(FRONTEND_FILE, media_type="text/html")
 
 
 # ---------- 1. WEATHER SERVICE ----------
