@@ -1,0 +1,2033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgriLink — Digital Farm Management & AI Advisor</title>
+
+<!-- Leaflet CSS for Map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<!-- Chart.js for Interactive SaaS Analytics -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<style>
+  :root {
+    --primary: #2E5A27;
+    --primary-dark: #1E3D19;
+    --primary-light: #EBF4E8;
+    --accent: #D9822B;
+    --accent-hover: #B3681D;
+    --soil: #2A241A;
+    --soil-light: #6E5A44;
+    --bg-page: #F7F5EE;
+    --surface: #FFFFFF;
+    --surface-alt: #FAF9F5;
+    --border: #E5E2D8;
+    --border-subtle: #ECE9DF;
+    --text: #2A241A;
+    --text-muted: #736F64;
+    --success: #287D3C;
+    --warning: #B9770E;
+    --danger: #C0392B;
+    --info: #1D6F8A;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 10px 28px rgba(0,0,0,0.12);
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --sidebar-width: 250px;
+    --header-height: 60px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg-page);
+    color: var(--text);
+    line-height: 1.5;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---------------------------------------------------- */
+  /* TOP GLOBAL HEADER                                    */
+  /* ---------------------------------------------------- */
+  .app-header {
+    height: var(--header-height);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 100;
+    flex-shrink: 0;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--primary-dark);
+    font-weight: 800;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+  }
+  .logo-badge {
+    background: var(--primary);
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+  .farm-location-badge {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    color: var(--soil-light);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+  }
+  .farm-location-badge strong { color: var(--soil); font-weight: 700; }
+
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .btn-analyze-global {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s, transform 0.1s;
+    box-shadow: 0 2px 6px rgba(217,130,43,0.25);
+  }
+  .btn-analyze-global:hover { background: var(--accent-hover); transform: translateY(-1px); }
+  .btn-analyze-global:active { transform: translateY(0); }
+
+  .user-profile-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--soil);
+  }
+  .avatar {
+    width: 24px;
+    height: 24px;
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+
+  /* ---------------------------------------------------- */
+  /* APP CONTAINER & SIDEBAR                              */
+  /* ---------------------------------------------------- */
+  .app-container {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  .app-sidebar {
+    width: var(--sidebar-width);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 16px 10px;
+    flex-shrink: 0;
+  }
+
+  .nav-group { display: flex; flex-direction: column; gap: 4px; }
+  .nav-group-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 8px 12px 4px;
+    letter-spacing: 0.05em;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    color: var(--soil-light);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .nav-item:hover {
+    background: var(--surface-alt);
+    color: var(--primary-dark);
+  }
+  .nav-item.active {
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    font-weight: 700;
+  }
+  .nav-item .icon { font-size: 1.15rem; width: 22px; text-align: center; }
+  .nav-item .nav-badge {
+    margin-left: auto;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 700;
+  }
+
+  .sidebar-footer {
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 12px;
+  }
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--success);
+    font-weight: 600;
+    padding: 6px 10px;
+    background: #EDF7EE;
+    border-radius: 6px;
+    margin-top: 8px;
+  }
+  .status-dot { width: 7px; height: 7px; background: var(--success); border-radius: 50%; }
+
+  /* ---------------------------------------------------- */
+  /* MAIN CONTENT AREA & VIEWS                            */
+  /* ---------------------------------------------------- */
+  .app-main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 32px 60px;
+    background: var(--bg-page);
+  }
+
+  .view-container { display: none; animation: fadeIn 0.2s ease-out; }
+  .view-container.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .page-title { font-size: 1.5rem; font-weight: 800; color: var(--soil); }
+  .page-subtitle { font-size: 0.88rem; color: var(--text-muted); margin-top: 2px; }
+  .page-actions { display: flex; gap: 8px; align-items: center; }
+
+  /* SaaS Surface Containers */
+  .surface-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+  }
+  .surface-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .surface-title { font-size: 1.05rem; font-weight: 700; color: var(--soil); display: flex; align-items: center; gap: 8px; }
+
+  /* Layout Grids */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+  @media (max-width: 1024px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .app-sidebar { width: 70px; padding: 12px 6px; }
+    .nav-item span:not(.icon) { display: none; }
+    .nav-group-label { display: none; }
+    .status-pill { display: none; }
+    .app-main { padding: 16px; }
+  }
+
+  /* Metric KPI Block */
+  .kpi-block {
+    background: var(--surface-alt);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    text-align: left;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .kpi-block.interactive { cursor: pointer; }
+  .kpi-block.interactive:hover { transform: translateY(-2px); border-color: var(--primary); background: #F3F1E7; }
+  .kpi-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); }
+  .kpi-value { font-size: 1.5rem; font-weight: 800; color: var(--soil); margin: 4px 0 2px; }
+  .kpi-footer { font-size: 0.78rem; font-weight: 600; color: var(--success); }
+
+  /* Badges & Chips */
+  .badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+  }
+  .badge-success { background: #D4EDDA; color: var(--success); }
+  .badge-warning { background: #FFF3CD; color: var(--warning); }
+  .badge-demo { background: #E8F4F8; color: var(--info); }
+  .badge-danger { background: #FADBD8; color: var(--danger); }
+
+  /* Standard Form Buttons */
+  button, select, input { font-family: inherit; font-size: 0.88rem; }
+  .btn {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--primary-dark); }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--soil); }
+  .btn-outline:hover { background: var(--surface-alt); border-color: var(--border-hover); }
+  .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+
+  /* Weather Forecast Strip */
+  .forecast-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+  .forecast-card {
+    flex: 1;
+    min-width: 95px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 12px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .forecast-card:hover { border-color: var(--primary); background: var(--primary-light); transform: translateY(-2px); }
+  .forecast-card.active { border-color: var(--primary); background: var(--primary-light); font-weight: bold; }
+
+  /* Interactive Chat / AI Interface */
+  .chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 480px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .chat-context-bar {
+    background: var(--surface-alt);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 10px 16px;
+    font-size: 0.8rem;
+    color: var(--soil-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .chat-history {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .chat-bubble {
+    max-width: 82%;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+  .chat-bubble.ai {
+    background: var(--surface-alt);
+    border: 1px solid var(--border-subtle);
+    color: var(--soil);
+    align-self: flex-start;
+    border-bottom-left-radius: 2px;
+  }
+  .chat-bubble.user {
+    background: var(--primary);
+    color: #fff;
+    align-self: flex-end;
+    border-bottom-right-radius: 2px;
+  }
+  .chat-quick-actions {
+    padding: 8px 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+  }
+  .quick-chip {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--primary-dark);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .quick-chip:hover { background: var(--primary-light); border-color: var(--primary); }
+
+  .chat-input-row {
+    padding: 12px 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+  }
+  .chat-input-row input {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface-alt);
+  }
+
+  /* Modals */
+  .modal-backdrop {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    backdrop-filter: blur(2px);
+  }
+  .modal-backdrop.active { display: flex; }
+  .modal-content {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    width: 90%;
+    max-width: 580px;
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 24px;
+    position: relative;
+    box-shadow: var(--shadow-lg);
+  }
+  .modal-close-btn {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: transparent; border: none;
+    font-size: 1.3rem; cursor: pointer; color: var(--text-muted);
+  }
+
+  /* Analysis Drawer */
+  .analysis-drawer {
+    position: fixed;
+    top: 0; right: -420px;
+    width: 400px;
+    height: 100vh;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    z-index: 1500;
+    transition: right 0.3s ease;
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .analysis-drawer.open { right: 0; }
+
+  /* Mobile Bottom Navigation */
+  .mobile-nav {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 56px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    z-index: 1000;
+    justify-content: space-around;
+    align-items: center;
+  }
+  .mobile-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 600;
+    gap: 2px;
+  }
+  .mobile-nav-btn.active { color: var(--primary); }
+
+  @media (max-width: 768px) {
+    .app-sidebar { display: none; }
+    .mobile-nav { display: flex; }
+    .app-main { padding: 16px 16px 70px; }
+  }
+
+  /* History Table */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .data-table th, .data-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-subtle); text-align: left; }
+  .data-table th { background: var(--surface-alt); color: var(--text-muted); font-weight: 700; }
+  .data-table tr:hover { background: var(--surface-alt); cursor: pointer; }
+
+  /* Toast Notification */
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--primary-dark);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-md);
+    z-index: 3000;
+    display: none;
+    animation: slideUp 0.2s ease-out;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+</style>
+</head>
+<body>
+
+<!-- ---------------------------------------------------- -->
+<!-- 1. TOP GLOBAL APP HEADER                             -->
+<!-- ---------------------------------------------------- -->
+<header class="app-header">
+  <div class="header-left">
+    <a href="#overview" class="logo" onclick="navigateTo('overview')">
+      <div class="logo-badge">🌱</div>
+      <span>AgriLink</span>
+    </a>
+    <div class="farm-location-badge" id="globalFarmLocationBadge">
+      <span>📍</span>
+      <span id="headerFarmName">Sri Venkateswara Organic Farm</span>
+      <span>•</span>
+      <span id="headerFarmRegion">Hyderabad, Telangana</span>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <button class="btn-analyze-global" id="btnGlobalAnalyze" onclick="triggerFarmAnalysis()">
+      <span>🚀</span> <span>Analyze Farm</span>
+    </button>
+    <div class="user-profile-chip">
+      <div class="avatar">R</div>
+      <span id="headerFarmerName">Ramesh Reddy</span>
+    </div>
+  </div>
+</header>
+
+<!-- ---------------------------------------------------- -->
+<!-- 2. APP CONTAINER WITH PERSISTENT SIDEBAR             -->
+<!-- ---------------------------------------------------- -->
+<div class="app-container">
+
+  <!-- Desktop Sidebar Navigation -->
+  <aside class="app-sidebar">
+    <div class="nav-group">
+      <div class="nav-group-label">Farm Operations</div>
+      <a class="nav-item active" onclick="navigateTo('overview')" id="nav-overview">
+        <span class="icon">🏠</span> <span>Overview</span>
+      </a>
+      <a class="nav-item" onclick="navigateTo('farm')" id="nav-farm">
+        <span class="icon">🌾</span> <span>My Farm</span>
+      </a>
+      <a class="nav-item" onclick="navigateTo('weather')" id="nav-weather">
+        <span class="icon">🌦</span> <span>Weather</span>
+      </a>
+      <a class="nav-item" onclick="navigateTo('soil')" id="nav-soil">
+        <span class="icon">🌱</span> <span>Soil Health</span>
+      </a>
+      <a class="nav-item" onclick="navigateTo('satellite')" id="nav-satellite">
+        <span class="icon">🛰</span> <span>Satellite & Field</span>
+      </a>
+
+      <div class="nav-group-label" style="margin-top:12px;">Intelligence</div>
+      <a class="nav-item" onclick="navigateTo('advisor')" id="nav-advisor">
+        <span class="icon">🧠</span> <span>AI Advisor</span>
+        <span class="nav-badge">Live</span>
+      </a>
+      <a class="nav-item" onclick="navigateTo('disease')" id="nav-disease">
+        <span class="icon">🩺</span> <span>Disease Detection</span>
+      </a>
+      <a class="nav-item" onclick="navigateTo('insights')" id="nav-insights">
+        <span class="icon">📊</span> <span>Insights & Logs</span>
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <a class="nav-item" onclick="navigateTo('settings')" id="nav-settings">
+        <span class="icon">⚙</span> <span>Settings</span>
+      </a>
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        <span>Connected: AgriLink API v1.0</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main View Area -->
+  <main class="app-main">
+
+    <!-- ==================================================== -->
+    <!-- VIEW 1: OVERVIEW PAGE                                -->
+    <!-- ==================================================== -->
+    <div class="view-container active" id="view-overview">
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">Good morning, <span id="overviewFarmerGreeting">Ramesh</span> 👋</h2>
+          <p class="page-subtitle" id="overviewFarmSubtitle">Sri Venkateswara Organic Farm • Hyderabad, Telangana • 4.5 Acres</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-outline btn-sm" onclick="navigateTo('farm')">Manage Fields</button>
+          <button class="btn btn-sm" onclick="triggerFarmAnalysis()">🚀 Run Analysis</button>
+        </div>
+      </div>
+
+      <!-- Farm Health Status Strip -->
+      <div class="surface-panel" style="padding:16px 20px; background:linear-gradient(90deg, #FAF8F2 0%, #F1EFE6 100%);">
+        <div style="font-size:0.8rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;">Farm Health Summary</div>
+        <div class="grid-4">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:1.2rem;">🌱</span>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">Vegetation</div><strong style="color:var(--success)" id="ovVegHealth">Good (Dense)</strong></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:1.2rem;">💧</span>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">Soil Moisture</div><strong style="color:var(--success)" id="ovMoisture">Adequate (38%)</strong></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:1.2rem;">🌦</span>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">Weather Status</div><strong style="color:var(--soil)" id="ovWeatherStatus">Favorable (29°C)</strong></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:1.2rem;">🛰</span>
+            <div><div style="font-size:0.75rem; color:var(--text-muted);">NDVI Index</div><strong style="color:var(--primary-dark)" id="ovNdvi">0.68 (Healthy)</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Telemetry KPI Grid -->
+      <div class="grid-4" style="margin-bottom:20px;">
+        <div class="kpi-block interactive" onclick="navigateTo('weather')">
+          <div class="kpi-label">Ambient Temperature</div>
+          <div class="kpi-value"><span id="kpiTemp">29.5</span>°C</div>
+          <div class="kpi-footer" id="kpiCondition">⛅ Partly cloudy</div>
+        </div>
+        <div class="kpi-block interactive" onclick="navigateTo('weather')">
+          <div class="kpi-label">Relative Humidity</div>
+          <div class="kpi-value"><span id="kpiHum">68</span>%</div>
+          <div class="kpi-footer">Optimal range</div>
+        </div>
+        <div class="kpi-block interactive" onclick="navigateTo('soil')">
+          <div class="kpi-label">Soil pH Level</div>
+          <div class="kpi-value" id="kpiPh">7.2</div>
+          <div class="kpi-footer" id="kpiPhStatus">Optimal (Vertisol)</div>
+        </div>
+        <div class="kpi-block interactive" onclick="navigateTo('satellite')">
+          <div class="kpi-label">NDVI Canopy Index</div>
+          <div class="kpi-value" id="kpiNdvi">0.68</div>
+          <div class="kpi-footer">Moderate-Dense</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- AI Advisor Snapshot -->
+        <div class="surface-panel">
+          <div class="surface-header">
+            <div class="surface-title">🧠 AI Farm Advisor Summary</div>
+            <span class="badge badge-success">Grounded Model</span>
+          </div>
+          <p id="overviewAdvisorySummary" style="font-size:0.92rem; color:var(--soil); line-height:1.6;">
+            Based on verified agro-meteorological parameters, soil nutrient profile (N:68, P:42, K:55 kg/ha), and satellite vegetation index (NDVI: 0.68), <strong>Rice (Paddy)</strong> is the recommended crop for this field cycle.
+          </p>
+          <div style="margin-top:16px; display:flex; gap:10px;">
+            <button class="btn btn-sm" onclick="navigateTo('advisor')">💬 Open Full Advisory</button>
+            <button class="btn btn-outline btn-sm" onclick="navigateTo('soil')">View Soil Matrix</button>
+          </div>
+        </div>
+
+        <!-- Active Alerts & Recent Activity -->
+        <div class="surface-panel">
+          <div class="surface-header">
+            <div class="surface-title">⚠ Active Alerts & Activity</div>
+            <span class="badge badge-warning">2 Active</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:0.85rem;">
+            <div style="padding:10px; background:#FFF9E6; border-left:3px solid var(--warning); border-radius:4px;">
+              <strong>🌦 Weather Risk:</strong> Warm conditions expected over the next 48h. Monitor soil moisture levels.
+            </div>
+            <div style="padding:10px; background:#EBF4E8; border-left:3px solid var(--success); border-radius:4px;">
+              <strong>🌱 Crop Suitability:</strong> Recommended crop: <strong>Rice (Paddy)</strong> with 89% compatibility.
+            </div>
+            <div style="padding:10px; background:var(--surface-alt); border-left:3px solid var(--info); border-radius:4px;">
+              <strong>📊 Recent Scan:</strong> No active fungal disease reported on recent leaf screen.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================== -->
+    <!-- VIEW 2: MY FARM MANAGEMENT                           -->
+    <!-- ==================================================== -->
+    <div class="view-container" id="view-farm">
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">My Farm Management</h2>
+          <p class="page-subtitle">Configure field boundaries, farm profiles, and GPS coordinates.</p>
+        </div>
+        <div class="page-actions">
+          <select id="farmSelectorDropdown" onchange="switchFarmProfile(this.value)" style="padding:7px 12px; font-weight:600;">
+            <option value="farm-telangana-01">🌾 Sri Venkateswara Farm (Telangana)</option>
+            <option value="farm-ap-02">🌾 Krishna Delta Field (Andhra Pradesh)</option>
+            <option value="farm-punjab-03">🌾 Golden Harvest Farm (Punjab)</option>
+            <option value="farm-mh-04">🌾 Vidarbha Cotton Estate (Maharashtra)</option>
+            <option value="farm-ka-05">🌾 Dharwad Agro Field (Karnataka)</option>
+          </select>
+          <button class="btn btn-sm" onclick="openAddFarmModal()">➕ Add Farm</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Interactive Map -->
+        <div class="surface-panel" style="padding:14px;">
+          <div class="surface-header" style="margin-bottom:10px;">
+            <div class="surface-title">📍 Interactive Field Map</div>
+            <span class="badge badge-success">GPS Active</span>
+          </div>
+          <div id="leafletMap" style="height:340px; width:100%; border-radius:8px; border:1px solid var(--border);"></div>
+          <p style="font-size:0.75rem; color:var(--text-muted); margin-top:8px;">
+            💡 Click anywhere on the map or drag the farm pin to relocate your field.
+          </p>
+        </div>
+
+        <!-- Farm Profile Details -->
+        <div class="surface-panel">
+          <div class="surface-header">
+            <div class="surface-title">📋 Field Specifications</div>
+            <button class="btn btn-outline btn-sm" onclick="openEditFarmModal()">✏️ Edit Profile</button>
+          </div>
+          <table class="data-table">
+            <tbody>
+              <tr><th>Farm Name</th><td id="fpName">Sri Venkateswara Organic Farm</td></tr>
+              <tr><th>Farmer / Owner</th><td id="fpFarmer">Ramesh Reddy</td></tr>
+              <tr><th>Region / State</th><td id="fpRegion">Telangana (Hyderabad)</td></tr>
+              <tr><th>Total Area</th><td><span id="fpArea">4.5</span> Acres</td></tr>
+              <tr><th>Latitude / Longitude</th><td><code id="fpCoords">17.3850° N, 78.4867° E</code></td></tr>
+              <tr><th>Soil Classification</th><td id="fpSoilType">Black Cotton Soil (Vertisol)</td></tr>
+              <tr><th>Primary Crop Cycle</th><td id="fpCrop">Rice (Paddy)</td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top:16px; display:flex; gap:10px;">
+            <button class="btn btn-sm" onclick="triggerFarmAnalysis()">🚀 Run Farm Analysis</button>
+            <button class="btn btn-outline btn-sm" onclick="navigateTo('soil')">Manage Soil Tests</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================== -->
+    <!-- VIEW 3: WEATHER FORECAST                             -->
+    <!-- ==================================================== -->
+    <div class="view-container" id="view-weather">
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">Live Weather & Forecast</h2>
+          <p class="page-subtitle" id="weatherSubtitle">Hyderabad, Telangana • Open-Meteo Meteorological Telemetry</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-outline btn-sm" id="btnRefreshWeather" onclick="refreshWeather()">🔄 Refresh</button>
+          <span style="font-size:0.75rem; color:var(--text-muted);" id="weatherLastUpdated">Updated just now</span>
+        </div>
+      </div>
+
+      <!-- Current Weather Hero Card -->
+      <div class="surface-panel" style="background:linear-gradient(135deg, #FAF8F2 0%, #EBF4E8 100%);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+          <div>
+            <div style="font-size:2.8rem; font-weight:800; color:var(--soil); display:flex; align-items:center; gap:10px;">
+              <span id="wHeroIcon">⛅</span>
+              <span id="wHeroTemp">29.5°C</span>
+            </div>
+            <div style="font-size:1.1rem; font-weight:600; color:var(--soil-light);" id="wHeroCondition">Partly cloudy</div>
+            <div style="font-size:0.82rem; color:var(--text-muted); margin-top:2px;">Feels like <span id="wHeroFeels">31.0°C</span></div>
+          </div>
+          <div class="grid-3" style="min-width:320px; gap:12px;">
+            <div class="kpi-block" style="background:#fff;">
+              <div class="kpi-label">Relative Humidity</div>
+              <div class="kpi-value" style="font-size:1.2rem;"><span id="wHeroHum">68</span>%</div>
+            </div>
+            <div class="kpi-block" style="background:#fff;">
+              <div class="kpi-label">Precipitation</div>
+              <div class="kpi-value" style="font-size:1.2rem;"><span id="wHeroRain">0.0</span> mm</div>
+            </div>
+            <div class="kpi-block" style="background:#fff;">
+              <div class="kpi-label">Wind Speed</div>
+              <div class="kpi-value" style="font-size:1.2rem;"><span id="wHeroWind">12.5</span> km/h</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7-Day Forecast Strip -->
+      <div class="surface-panel">
+        <div class="surface-header">
+          <div class="surface-title">📅 7-Day Agronomic Forecast (Click day for hourly advice)</div>
+          <span class="badge badge-success">Open-Meteo Live</span>
+        </div>
+        <div class="forecast-row" id="forecastCardsRow">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+
+      <!-- Temperature & Rainfall Trend Chart -->
+      <div class="surface-panel">
+        <div class="surface-header">
+          <div class="surface-title">📈 7-Day Thermal & Precipitation Trend</div>
+        </div>
+        <div style="height:260px; width:100%;">
+          <canvas id="weatherChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================== -->
+    <!-- VIEW 4: SOIL HEALTH                                  -->
+    <!-- ==================================================== -->
+    <div class="view-container" id="view-soil">
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">Soil Nutrient & Physical Profile</h2>
+          <p class="page-subtitle">Laboratory chemical test measurements & fertility metrics.</p>
+        </div>
+        <div class="page-actions">
+          <span class="badge badge-success" id="soilDataQualityBadge">USER PROVIDED</span>
+          <button class="btn btn-sm" onclick="openSoilModal()">✏️ Edit Soil Data</button>
+        </div>
+      </div>
+
+      <!-- Soil KPI Matrix -->
+      <div class="grid-4" style="margin-bottom:20px;">
+        <div class="kpi-block interactive" onclick="openSoilModal()">
+          <div class="kpi-label">Soil pH Level</div>
+          <div class="kpi-value" id="sValPh">7.2</div>
+          <div class="kpi-footer" id="sStatusPh">Optimal (6.0-7.5)</div>
+        </div>
+        <div class="kpi-block interactive" onclick="openSoilModal()">
+          <div class="kpi-label">Nitrogen (N)</div>
+          <div class="kpi-value"><span id="sValN">68</span> <small style="font-size:0.8rem">kg/ha</small></div>
+          <div class="kpi-footer" id="sStatusN">Medium</div>
+        </div>
+        <div class="kpi-block interactive" onclick="openSoilModal()">
+          <div class="kpi-label">Phosphorus (P)</div>
+          <div class="kpi-value"><span id="sValP">42</span> <small style="font-size:0.8rem">kg/ha</small></div>
+          <div class="kpi-footer" id="sStatusP">Good</div>
+        </div>
+        <div class="kpi-block interactive" onclick="openSoilModal()">
+          <div class="kpi-label">Potassium (K)</div>
+          <div class="kpi-value"><span id="sValK">55</span> <small style="font-size:0.8rem">kg/ha</small></div>
+          <div class="kpi-footer" id="sStatusK">Good</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Visual Nutrient Progress Bars -->
+        <div class="surface-panel">
+          <div class="surface-header">
+            <div class="surface-title">🧪 Macronutrient Sufficiency</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:14px; font-size:0.85rem;">
+            <div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span><strong>Soil pH:</strong> <span id="barPhVal">7.2</span></span>
+                <span class="badge badge-success">Optimal</span>
+              </div>
+              <div style="height:10px; background:#E0E0E0; border-radius:5px; overflow:hidden;">
+                <div id="barPhFill" style="height:100%; width:72%; background:linear-gradient(90deg, #E74C3C 0%, #2ECC71 50%, #E74C3C 100%);"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span><strong>Available Nitrogen (N):</strong> <span id="barNVal">68 kg/ha</span></span>
+                <span class="badge badge-warning">Medium</span>
+              </div>
+              <div style="height:10px; background:#E0E0E0; border-radius:5px; overflow:hidden;">
+                <div id="barNFill" style="height:100%; width:55%; background:#287D3C;"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span><strong>Available Phosphorus (P):</strong> <span id="barPVal">42 kg/ha</span></span>
+                <span class="badge badge-success">Good</span>
+              </div>
+              <div style="height:10px; background:#E0E0E0; border-radius:5px; overflow:hidden;">
+                <div id="barPFill" style="height:100%; width:70%; background:#287D3C;"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span><strong>Available Potassium (K):</strong> <span id="barKVal">55 kg/ha</span></span>
+                <span class="badge badge-success">Good</span>
+              </div>
+              <div style="height:10px; background:#E0E0E0; border-radius:5px; overflow:hidden;">
+                <div id="barKFill" style="height:100%; width:65%; background:#287D3C;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Soil Agronomic Recommendations -->
+        <div class="surface-panel">
+          <div class="surface-header">
+            <div class="surface-title">🌱 Soil Conditioning Advice</div>
+          </div>
+          <div style="font-size:0.88rem; line-height:1.6; color:var(--soil);" id="soilAdviceText">
+            <p>✓ <strong>pH Compatibility:</strong> Current soil pH (7.2) allows optimal availability of primary nutrients without lockup.</p>
+            <p style="margin-top:8px;">✓ <strong>Moisture Level:</strong> Soil moisture is in the adequate 38% range. Maintain current irrigation intervals.</p>
+            <p style="margin-top:8px;">⚠ <strong>Nitrogen Management:</strong> Incorporate green manure (Sesbania/Cowpea) or split nitrogen top-dressing to prevent leaching.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" style="margin-top:14px;" onclick="triggerFarmAnalysis()">🚀 Recalculate Crop Suitability</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================== -->
+    <!-- VIEW 5: SATELLITE & FIELD MONITORING                 -->
+    <!-- ==================================================== -->
+    <div class="view-container" id="view-satellite">
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">Satellite & Remote Sensing</h2>
+          <p class="page-subtitle">Vegetation vigor, canopy greenness, and land surface indices.</p>
+        </div>
+        <div class="page-actions">
+          <span class="badge badge-demo">DEMO DATA / GEE ABSTRACTION</span>
+        </div>
+      </div>
+
+      <!-- Interactive Metric Selector Tabs -->
+      <div style="display:flex; gap:8px; margin-bottom:16px; overflow-x:auto;">
+        <button class="btn btn-sm" id="satTabNdvi" onclick="switchSatMetric('ndvi')">🌿 NDVI Index</button>
+        <button class="btn btn-outline btn-sm" id="satTabMoist" onclick="switchSatMetric('moisture')">💧 Soil Moisture</button>
+        <button class="btn btn-outline btn-sm" id="satTabLst" onclick="switchSatMetric('lst')">🌡️ Land Surface Temp</button>
+        <button class="btn btn-outline btn-sm" id="satTabEvi" onclick="switchSatMetric('evi')">🍃 EVI Index</button>
+      </div>
+
+      <div class="grid-2">
+        <!-- Metric Detail Panel -->
+        <div class="surface-panel">
+          <div class="surface-header">
+            <div class="surface-title" id="satActiveTitle">🌿 NDVI (Normalized Difference Vegetation Index)</div>
+            <span class="badge badge-success" id="satActiveStatus">Good</span>
+          </div>
+          <div style="font-size:2.4rem; font-weight:800; color:var(--primary-dark);" id="satActiveValue">0.68</div>
+          <p style="font-size:0.88rem; color:var(--soil-light); margin-top:6px;" id="satActiveDesc">
+            Vegetation appears relatively healthy with active photosynthetic activity across the canopy.
+          </p>
+
+          <div style="margin-top:18px; padding:12px; background:var(--surface-alt); border-radius:6px; font-size:0.82rem;">
+            <strong>What does this mean?</strong>
+            <p style="margin-top:4px;" id="satActiveExplanation">
+              NDVI ranges from -1.0 to +1.0. Values between 0.60–0.85 represent dense, vigorous crops in active growth phases.
+            </p>
+          </div>
+        </div>
+
+        <!-- Historical Satellite Trend Chart -->
+        <div class="surface-panel">
+          <div class="surface-header">
+            <div class="surface-title">📈 30-Day Index Trajectory</div>
+          </div>
+          <div style="height:220px; width:100%;">
+            <canvas id="satelliteChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================== -->
+    <!-- VIEW 6: AI CONVERSATIONAL ADVISOR                    -->
+    <!-- ==================================================== -->
+    <div class="view-container" id="view-advisor">
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">AI Farm Advisor</h2>
+          <p class="page-subtitle">Conversational Agronomic Intelligence Grounded in Verified Farm Data.</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-sm" onclick="triggerFarmAnalysis()">🚀 Run Complete Analysis</button>
+        </div>
+      </div>
+
+      <div class="chat-container">
+        <!-- Verified Context Strip -->
+        <div class="chat-context-bar">
+          <div>
+            <strong>Farm Context:</strong>
+            <span id="chatCtxLocation">Telangana</span> •
+            <span id="chatCtxSoil">pH 7.2 (Vertisol)</span> •
+            <span id="chatCtxWeather">29.5°C</span> •
+            <span id="chatCtxCrop">Rice (Recommended)</span>
+          </div>
+          <span class="badge badge-success">Grounded & Verified</span>
+        </div>
+
+        <!-- Chat Message Log -->
+        <div class="chat-history" id="chatHistoryBox">
+          <div class="chat-bubble ai">
+            <strong>🌱 AgriLink Advisor:</strong><br>
+            Hello Ramesh! Based on your current farm telemetry in Telangana, field conditions are favorable for <strong>Rice (Paddy)</strong>. Soil moisture (38%) is adequate, though temperatures may rise over the weekend. How can I assist you with your field today?
+          </div>
+        </div>
+
+        <!-- Quick Prompt Chips -->
+        <div class="chat-quick-actions">
+          <span class="quick-chip" onclick="askAiQuestion('What crop should I plant right now and why?')">🌾 Best suited crop?</span>
+          <span class="quick-chip" onclick="askAiQuestion('What is my optimal irrigation schedule based on current soil moisture?')">💧 Irrigation schedule?</span>
+          <span class="quick-chip" onclick="askAiQuestion('Are there any microclimate weather risks over the next 5 days?')">🌦 Weather risks?</span>
+          <span class="quick-chip" onclick="askAiQuestion('Give me regenerative soil practices for my farm.')">♻️ Regenerative advice</span>
+        </div>
+
+        <!-- Chat Input Form -->
+        <form class="chat-input-row" onsubmit="handleSendChat(event)">
+          <input type="text" id="chatInputText" placeholder="Ask anything about your crop, soil, or irrigation..." autocomplete="off">
+          <button type="submit" class="btn">Send</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================================================== -->
+    <!-- VIEW 7: DISEASE DETECTION                            -->
+    <!-- ==================================================== -->
+    <div class="view-container" id="view-disease">
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">Crop Disease Detection</h2>
+          <p class="page-subtitle">Upload a crop or leaf image for visual pathogen screening.</p>
+        </div>
+        <div class="page-actions">
+          <span class="badge badge-demo">Demo Tests Available</span>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Upload Zone -->
+        <div class="surface-panel">
+          <div class="surface-header">
+            <div class="surface-title">📸 Leaf Image Upload</div>
+          </div>
+          <div class="drop-zone" id="dzLeaf" onclick="document.getElementById('fileLeafInput').click()">
+            <div style="font-size:2.5rem; margin-bottom:8px;">📷</div>
+            <strong style="font-size:0.95rem; color:var(--soil)">Drop leaf image here or click to browse</strong>
+            <p style="font-size:0.78rem; color:var(--text-muted); margin-top:4px;">Supports JPG, PNG (Max 10MB)</p>
+            <input type="file" id="fileLeafInput" accept="image/*" style="display:none;" onchange="handleLeafFileSelect(this)">
+            <img id="leafImgPreview" style="max-height:160px; margin:12px auto 0; display:none; border-radius:6px; box-shadow:var(--shadow-sm);">
+          </div>
+
+          <div style="margin-top:12px; display:flex; gap:8px;">
+            <button class="btn btn-sm" id="btnAnalyzeLeaf" style="display:none;" onclick="analyzeUploadedLeaf()">🔍 Analyze Leaf</button>
+            <button class="btn btn-outline btn-sm" id="btnRemoveLeaf" style="display:none;" onclick="removeUploadedLeaf()">❌ Remove</button>
+          </div>
+
+          <!-- Demo Quick Test Buttons -->
+          <div style="margin-top:16px; border-top:1px solid var(--border-subtle); padding-top:12px;">
+            <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:6px;">QUICK DEMO TESTS:</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn btn-outline btn-sm" onclick="runDemoDiseaseTest('sample_healthy_rice.jpg', 'Healthy Rice')">🌿 Healthy Rice</button>
+              <button class="btn btn-outline btn-sm" onclick="runDemoDiseaseTest('sample_rice_blast.jpg', 'Rice Blast')">🍂 Rice Blast</button>
+              <button class="btn btn-outline btn-sm" onclick="runDemoDiseaseTest('sample_tomato_early_blight.jpg', 'Tomato Early Blight')">🍅 Early Blight</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Diagnostic Result Panel -->
+        <div class="surface-panel">
+          <div class="surface-header">
+            <div class="surface-title">🔬 Diagnostic Analysis</div>
+            <span class="badge badge-success" id="diseaseStatusBadge">Ready</span>
+          </div>
+
+          <div id="diseaseResultEmptyState" style="padding:40px 20px; text-align:center; color:var(--text-muted);">
+            <p>Upload a leaf image or select a demo test to view pathogen detection results.</p>
+          </div>
+
+          <div id="diseaseResultDetails" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <h3 style="font-size:1.3rem; color:var(--danger);" id="diagName">Rice Blast (Pyricularia oryzae)</h3>
+              <span class="badge badge-danger" id="diagScore">Score: 0.88</span>
+            </div>
+            <div style="font-size:0.85rem; color:var(--soil); margin-bottom:12px;">
+              <strong>Symptoms:</strong> <span id="diagSymptoms">Spindle-shaped lesions with grey center and brownish margins.</span>
+            </div>
+
+            <h4 style="font-size:0.88rem; color:var(--primary-dark); margin-bottom:4px;">Safe Non-Chemical Management:</h4>
+            <ul style="padding-left:18px; font-size:0.82rem; color:var(--soil); line-height:1.6;" id="diagActions">
+              <li>Avoid excessive nitrogen application which accelerates fungal proliferation.</li>
+              <li>Maintain proper water depth in paddy fields (5-10 cm).</li>
+              <li>Remove heavily infected residue away from the field.</li>
+            </ul>
+
+            <p style="font-size:0.72rem; color:var(--text-muted); margin-top:14px; border-top:1px solid var(--border-subtle); padding-top:8px;">
+              ⚠️ <strong>Disclaimer:</strong> Image-based detection is an AI screening prediction. Confirm with local extension officers before applying any chemical treatments.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================== -->
+    <!-- VIEW 8: INSIGHTS & ANALYTICS                         -->
+    <!-- ==================================================== -->
+    <div class="view-container" id="view-insights">
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">Farm Insights & History</h2>
+          <p class="page-subtitle">Longitudinal agro-ecological trends and recorded advisories.</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-outline btn-sm" onclick="fetchHistoryLogs()">🔄 Refresh History</button>
+        </div>
+      </div>
+
+      <!-- Trend Chart -->
+      <div class="surface-panel">
+        <div class="surface-header">
+          <div class="surface-title">📈 Crop Recommendation History & Soil Trends</div>
+        </div>
+        <div style="height:240px; width:100%;">
+          <canvas id="insightsChart"></canvas>
+        </div>
+      </div>
+
+      <!-- SQLite History Table -->
+      <div class="surface-panel">
+        <div class="surface-header">
+          <div class="surface-title">📋 Historical Advisory Audit Log (SQLite)</div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Farm ID</th>
+              <th>Recommended Crop</th>
+              <th>Confidence Score</th>
+              <th>Language</th>
+              <th>Key Agro-Factor</th>
+            </tr>
+          </thead>
+          <tbody id="insightsHistoryTableBody">
+            <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Loading historical records...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================================================== -->
+    <!-- VIEW 9: SETTINGS                                     -->
+    <!-- ==================================================== -->
+    <div class="view-container" id="view-settings">
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">Platform Settings</h2>
+          <p class="page-subtitle">Configure language, units, and system parameters.</p>
+        </div>
+      </div>
+
+      <div class="surface-panel" style="max-width:600px;">
+        <div class="surface-header">
+          <div class="surface-title">🌐 Language & Localization</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:12px; font-size:0.88rem;">
+          <div>
+            <label style="font-weight:600; display:block; margin-bottom:4px;">Display Language</label>
+            <select id="settingsLangSelect" onchange="changeLanguage(this.value)" style="width:100%; padding:8px 10px;">
+              <option value="en" selected>English</option>
+              <option value="te">తెలుగు (Telugu)</option>
+              <option value="hi">हिन्दी (Hindi)</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-weight:600; display:block; margin-bottom:4px;">Measurement Units</label>
+            <select style="width:100%; padding:8px 10px;">
+              <option value="metric" selected>Metric (°C, kg/ha, mm, km/h)</option>
+              <option value="imperial">Imperial (°F, lbs/acre, in, mph)</option>
+            </select>
+          </div>
+          <div style="margin-top:10px;">
+            <button class="btn btn-sm" onclick="showToast('Settings saved successfully!')">Save Preferences</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ---------------------------------------------------- -->
+<!-- MOBILE BOTTOM NAVIGATION                             -->
+<!-- ---------------------------------------------------- -->
+<nav class="mobile-nav">
+  <a class="mobile-nav-btn active" onclick="navigateTo('overview')" id="mob-overview"><span>🏠</span><span>Home</span></a>
+  <a class="mobile-nav-btn" onclick="navigateTo('farm')" id="mob-farm"><span>🌾</span><span>Farm</span></a>
+  <a class="mobile-nav-btn" onclick="navigateTo('weather')" id="mob-weather"><span>🌦</span><span>Weather</span></a>
+  <a class="mobile-nav-btn" onclick="navigateTo('advisor')" id="mob-advisor"><span>🧠</span><span>Advisor</span></a>
+  <a class="mobile-nav-btn" onclick="navigateTo('disease')" id="mob-disease"><span>🩺</span><span>Disease</span></a>
+</nav>
+
+<!-- ---------------------------------------------------- -->
+<!-- MODALS & DRAWERS                                     -->
+<!-- ---------------------------------------------------- -->
+
+<!-- 1. EDIT SOIL MODAL -->
+<div class="modal-backdrop" id="modalSoil">
+  <div class="modal-content">
+    <button class="modal-close-btn" onclick="closeModal('modalSoil')">&times;</button>
+    <h3 style="font-size:1.2rem; color:var(--soil); margin-bottom:12px;">🧪 Edit Soil Laboratory Data</h3>
+    <form onsubmit="handleSaveSoilData(event)">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div><label style="font-size:0.8rem; font-weight:600;">pH Level</label><input type="number" step="0.1" id="mSoilPh" value="7.2" min="3" max="11" required style="width:100%; padding:6px 8px;"></div>
+        <div><label style="font-size:0.8rem; font-weight:600;">Nitrogen (N kg/ha)</label><input type="number" id="mSoilN" value="68" min="0" required style="width:100%; padding:6px 8px;"></div>
+        <div><label style="font-size:0.8rem; font-weight:600;">Phosphorus (P kg/ha)</label><input type="number" id="mSoilP" value="42" min="0" required style="width:100%; padding:6px 8px;"></div>
+        <div><label style="font-size:0.8rem; font-weight:600;">Potassium (K kg/ha)</label><input type="number" id="mSoilK" value="55" min="0" required style="width:100%; padding:6px 8px;"></div>
+        <div><label style="font-size:0.8rem; font-weight:600;">Moisture (%)</label><input type="number" id="mSoilMoist" value="38" min="5" max="100" required style="width:100%; padding:6px 8px;"></div>
+        <div><label style="font-size:0.8rem; font-weight:600;">Soil Texture</label><select id="mSoilType" style="width:100%; padding:6px 8px;"><option value="Black Cotton Soil (Vertisol)">Black Cotton Soil</option><option value="Red Sandy Loam (Alfisol)">Red Sandy Loam</option><option value="Alluvial Soil (Inceptisol)">Alluvial Soil</option></select></div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('modalSoil')">Cancel</button>
+        <button type="submit" class="btn btn-sm">Save Soil Data</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 2. ADD FARM MODAL -->
+<div class="modal-backdrop" id="modalAddFarm">
+  <div class="modal-content">
+    <button class="modal-close-btn" onclick="closeModal('modalAddFarm')">&times;</button>
+    <h3 style="font-size:1.2rem; color:var(--soil); margin-bottom:12px;">🌾 Register New Farm</h3>
+    <form onsubmit="handleSaveNewFarm(event)">
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div><label style="font-size:0.8rem; font-weight:600;">Farm Name</label><input type="text" id="mFarmName" required placeholder="e.g. Green Meadows Farm" style="width:100%; padding:6px 8px;"></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div><label style="font-size:0.8rem; font-weight:600;">Region</label><select id="mFarmRegion" style="width:100%; padding:6px 8px;"><option value="Telangana">Telangana</option><option value="Andhra Pradesh">Andhra Pradesh</option><option value="Punjab">Punjab</option></select></div>
+          <div><label style="font-size:0.8rem; font-weight:600;">Area (Acres)</label><input type="number" step="0.5" id="mFarmArea" value="5.0" style="width:100%; padding:6px 8px;"></div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('modalAddFarm')">Cancel</button>
+        <button type="submit" class="btn btn-sm">Create Farm</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 3. GLOBAL ANALYSIS DRAWER -->
+<div class="analysis-drawer" id="analysisDrawer">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-subtle); padding-bottom:10px;">
+    <h3 style="font-size:1.15rem; font-weight:800; color:var(--soil);">⚡ Farm Analysis Result</h3>
+    <button class="modal-close-btn" style="position:static;" onclick="closeDrawer()">&times;</button>
+  </div>
+
+  <div id="drawerProgress" style="margin-bottom:16px; font-size:0.85rem;">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;"><span>✓</span> <span>Location verified</span></div>
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;"><span>✓</span> <span>Weather retrieved</span></div>
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;"><span>✓</span> <span>Soil matrix evaluated</span></div>
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;"><span>✓</span> <span>Crop recommendation computed</span></div>
+  </div>
+
+  <div id="drawerResults" style="display:none; flex-direction:column; gap:12px; font-size:0.88rem;">
+    <div style="padding:12px; background:var(--primary-light); border-radius:8px; border-left:4px solid var(--primary);">
+      <div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted);">Recommended Crop</div>
+      <div style="font-size:1.4rem; font-weight:800; color:var(--primary-dark);" id="drawerCrop">Rice (Paddy)</div>
+      <div style="font-size:0.8rem; font-weight:600; color:var(--primary);" id="drawerScore">Model score: 0.89</div>
+    </div>
+
+    <div>
+      <strong>Why this crop?</strong>
+      <ul style="padding-left:16px; font-size:0.82rem; margin-top:4px;" id="drawerReasons">
+        <li>Soil pH matches Rice growth envelope</li>
+        <li>Current temperature matches tillering needs</li>
+      </ul>
+    </div>
+
+    <button class="btn" style="margin-top:14px; width:100%;" onclick="closeDrawer(); navigateTo('advisor');">💬 Open Full Advisory</button>
+  </div>
+</div>
+
+<!-- Global Toast Container -->
+<div class="toast" id="globalToast">Notification message</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+const API_URL = "http://localhost:8000";
+
+// ==========================================
+// CENTRALIZED REACTIVE STATE STORE
+// ==========================================
+const appStore = {
+  farm: {
+    id: "farm-telangana-01",
+    name: "Sri Venkateswara Organic Farm",
+    farmer: "Ramesh Reddy",
+    region: "Telangana",
+    lat: 17.3850,
+    lon: 78.4867,
+    area: 4.5,
+    soilType: "Black Cotton Soil (Vertisol)",
+    currentCrop: "Rice (Paddy)"
+  },
+  soil: {
+    ph: 7.2,
+    nitrogen: 68,
+    phosphorus: 42,
+    potassium: 55,
+    moisture: 0.38,
+    soilType: "Black Cotton Soil (Vertisol)",
+    quality: "user-provided"
+  },
+  weather: {
+    temperature: 29.5,
+    feels_like: 31.0,
+    humidity: 68,
+    precipitation: 0.0,
+    wind_speed: 12.5,
+    condition: "Partly cloudy",
+    condition_icon: "⛅",
+    forecast: []
+  },
+  satellite: {
+    ndvi: 0.68,
+    soil_moisture: 0.41,
+    land_surface_temp: 32.5,
+    evi: 0.45,
+    vegetation_health: "Moderate-Dense"
+  },
+  cropRecommendation: null,
+  diseaseScan: null,
+  activeTab: "overview",
+  language: "en"
+};
+
+let map, mapMarker, farmPolygon, weatherChart, satelliteChart, insightsChart;
+
+// Toast Notification
+function showToast(msg) {
+  const t = document.getElementById("globalToast");
+  t.textContent = msg;
+  t.style.display = "block";
+  setTimeout(() => { t.style.display = "none"; }, 3000);
+}
+
+// Modal controls
+function openModal(id) { document.getElementById(id).classList.add("active"); }
+function closeModal(id) { document.getElementById(id).classList.remove("active"); }
+function closeDrawer() { document.getElementById("analysisDrawer").classList.remove("open"); }
+
+// ==========================================
+// CLIENT-SIDE ROUTING & NAVIGATION
+// ==========================================
+function navigateTo(routeId) {
+  appStore.activeTab = routeId;
+
+  // Update desktop sidebar active state
+  document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+  const navEl = document.getElementById(`nav-${routeId}`);
+  if (navEl) navEl.classList.add("active");
+
+  // Update mobile bottom nav active state
+  document.querySelectorAll(".mobile-nav-btn").forEach(el => el.classList.remove("active"));
+  const mobEl = document.getElementById(`mob-${routeId}`);
+  if (mobEl) mobEl.classList.add("active");
+
+  // Show corresponding view container
+  document.querySelectorAll(".view-container").forEach(el => el.classList.remove("active"));
+  const viewEl = document.getElementById(`view-${routeId}`);
+  if (viewEl) viewEl.classList.add("active");
+
+  // Refresh charts / maps if needed
+  if (routeId === "farm") {
+    setTimeout(() => { if (map) map.invalidateSize(); }, 200);
+  } else if (routeId === "weather") {
+    renderWeatherChart();
+  } else if (routeId === "satellite") {
+    renderSatelliteChart();
+  } else if (routeId === "insights") {
+    fetchHistoryLogs();
+    renderInsightsChart();
+  }
+}
+
+// ==========================================
+// 1. LEAFLET MAP (MY FARM)
+// ==========================================
+function initLeafletMap() {
+  if (!map) {
+    map = L.map('leafletMap').setView([appStore.farm.lat, appStore.farm.lon], 14);
+
+    const streetLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap, © CARTO'
+    }).addTo(map);
+
+    const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: '© Esri, Maxar'
+    });
+
+    L.control.layers({ "Street View": streetLayer, "Satellite View": satLayer }, null, { position: 'topright' }).addTo(map);
+
+    mapMarker = L.marker([appStore.farm.lat, appStore.farm.lon], { draggable: true }).addTo(map);
+    mapMarker.on('dragend', function (e) {
+      const pos = mapMarker.getLatLng();
+      updateCoordinates(pos.lat, pos.lng);
+    });
+
+    map.on('click', function(e) {
+      mapMarker.setLatLng(e.latlng);
+      updateCoordinates(e.latlng.lat, e.latlng.lng);
+    });
+
+    drawPolygon(appStore.farm.lat, appStore.farm.lon);
+  }
+}
+
+function drawPolygon(lat, lon) {
+  const delta = 0.003;
+  const coords = [
+    [lat - delta, lon - delta],
+    [lat - delta, lon + delta],
+    [lat + delta * 0.8, lon + delta * 1.2],
+    [lat + delta, lon - delta * 0.7]
+  ];
+  if (!farmPolygon) {
+    farmPolygon = L.polygon(coords, { color: '#2E5A27', fillColor: '#5C7A3E', fillOpacity: 0.25, weight: 2 }).addTo(map);
+  } else {
+    farmPolygon.setLatLngs(coords);
+  }
+}
+
+function updateCoordinates(lat, lon) {
+  appStore.farm.lat = lat;
+  appStore.farm.lon = lon;
+  document.getElementById("fpCoords").textContent = `${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E`;
+  drawPolygon(lat, lon);
+  fetchWeather();
+  fetchSatellite();
+  showToast(`📍 Location updated: ${lat.toFixed(4)}°, ${lon.toFixed(4)}°`);
+}
+
+// ==========================================
+// 2. WEATHER TELEMETRY & CHARTS
+// ==========================================
+async function fetchWeather() {
+  try {
+    const res = await fetch(`${API_URL}/api/weather?lat=${appStore.farm.lat}&lon=${appStore.farm.lon}`);
+    if (res.ok) {
+      const data = await res.json();
+      appStore.weather = {
+        ...data.current,
+        forecast: data.forecast || [],
+        source: data.source || "Open-Meteo Live API"
+      };
+      updateWeatherUI();
+    }
+  } catch (err) {
+    console.warn("Weather fetch error, using cache", err);
+  }
+}
+
+function updateWeatherUI() {
+  const w = appStore.weather;
+  const temp = Math.round(w.temperature || 29.5);
+  document.getElementById("kpiTemp").textContent = temp;
+  document.getElementById("kpiCondition").textContent = `${w.condition_icon || "⛅"} ${w.condition || "Partly cloudy"}`;
+  document.getElementById("kpiHum").textContent = w.humidity || 68;
+
+  document.getElementById("wHeroTemp").textContent = `${temp}°C`;
+  document.getElementById("wHeroIcon").textContent = w.condition_icon || "⛅";
+  document.getElementById("wHeroCondition").textContent = w.condition || "Partly cloudy";
+  document.getElementById("wHeroFeels").textContent = `${Math.round(w.feels_like || temp + 1.5)}°C`;
+  document.getElementById("wHeroHum").textContent = w.humidity || 68;
+  document.getElementById("wHeroRain").textContent = w.precipitation || 0.0;
+  document.getElementById("wHeroWind").textContent = w.wind_speed || 12.5;
+
+  document.getElementById("ovWeatherStatus").textContent = `Favorable (${temp}°C)`;
+
+  // Forecast row
+  const row = document.getElementById("forecastCardsRow");
+  row.innerHTML = "";
+  (w.forecast || []).forEach((f, idx) => {
+    const card = document.createElement("div");
+    card.className = `forecast-card ${idx === 0 ? "active" : ""}`;
+    const dLabel = f.date ? (f.date.includes("-") ? f.date.slice(5) : f.date) : `Day ${idx+1}`;
+    card.innerHTML = `
+      <div style="font-size:0.75rem; color:var(--text-muted);">${dLabel}</div>
+      <div style="font-size:1.3rem; margin:3px 0;">${f.condition_icon || "⛅"}</div>
+      <div style="font-weight:700; font-size:0.85rem;">${Math.round(f.temp_max)}° / ${Math.round(f.temp_min)}°</div>
+      <div style="font-size:0.7rem; color:var(--info); font-weight:600;">${f.precipitation > 0 ? f.precipitation + "mm" : "Dry"}</div>
+    `;
+    row.appendChild(card);
+  });
+}
+
+function refreshWeather() {
+  fetchWeather();
+  showToast("🌦 Weather telemetry refreshed.");
+}
+
+function renderWeatherChart() {
+  const ctx = document.getElementById("weatherChart");
+  if (!ctx) return;
+  if (weatherChart) weatherChart.destroy();
+
+  const forecast = appStore.weather.forecast || [];
+  const labels = forecast.map(f => f.date ? f.date.slice(5) : "Day");
+  const temps = forecast.map(f => f.temp_max || 30);
+  const rains = forecast.map(f => f.precipitation || 0);
+
+  weatherChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels.length ? labels : ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5", "Day 6", "Day 7"],
+      datasets: [
+        { label: 'Max Temp (°C)', data: temps.length ? temps : [32, 31, 30, 29, 31, 32, 33], borderColor: '#D9822B', backgroundColor: 'rgba(217,130,43,0.1)', fill: true, tension: 0.3 },
+        { label: 'Rainfall (mm)', data: rains.length ? rains : [0, 0, 2.5, 8, 1, 0, 0], borderColor: '#1D6F8A', backgroundColor: 'rgba(29,111,138,0.2)', fill: true, tension: 0.3 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'top' } }
+    }
+  });
+}
+
+// ==========================================
+// 3. SOIL PROFILE & EDITING
+// ==========================================
+function openSoilModal() {
+  document.getElementById("mSoilPh").value = appStore.soil.ph;
+  document.getElementById("mSoilN").value = appStore.soil.nitrogen;
+  document.getElementById("mSoilP").value = appStore.soil.phosphorus;
+  document.getElementById("mSoilK").value = appStore.soil.potassium;
+  document.getElementById("mSoilMoist").value = Math.round(appStore.soil.moisture * 100);
+  openModal('modalSoil');
+}
+
+function handleSaveSoilData(e) {
+  e.preventDefault();
+  const ph = parseFloat(document.getElementById("mSoilPh").value);
+  const n = parseFloat(document.getElementById("mSoilN").value);
+  const p = parseFloat(document.getElementById("mSoilP").value);
+  const k = parseFloat(document.getElementById("mSoilK").value);
+  const m = parseFloat(document.getElementById("mSoilMoist").value);
+
+  appStore.soil.ph = ph;
+  appStore.soil.nitrogen = n;
+  appStore.soil.phosphorus = p;
+  appStore.soil.potassium = k;
+  appStore.soil.moisture = m / 100;
+  appStore.soil.quality = "user-provided";
+
+  updateSoilUI();
+  closeModal('modalSoil');
+  showToast("🧪 Soil data updated successfully! Recalculating crop recommendation...");
+  triggerFarmAnalysis(false);
+}
+
+function updateSoilUI() {
+  const s = appStore.soil;
+  document.getElementById("sValPh").textContent = s.ph.toFixed(1);
+  document.getElementById("kpiPh").textContent = s.ph.toFixed(1);
+  document.getElementById("barPhVal").textContent = s.ph.toFixed(1);
+  document.getElementById("barPhFill").style.width = Math.min(100, Math.max(0, (s.ph / 14) * 100)) + "%";
+
+  document.getElementById("sValN").textContent = s.nitrogen;
+  document.getElementById("barNVal").textContent = `${s.nitrogen} kg/ha`;
+  document.getElementById("barNFill").style.width = Math.min(100, (s.nitrogen / 140) * 100) + "%";
+
+  document.getElementById("sValP").textContent = s.phosphorus;
+  document.getElementById("barPVal").textContent = `${s.phosphorus} kg/ha`;
+  document.getElementById("barPFill").style.width = Math.min(100, (s.phosphorus / 80) * 100) + "%";
+
+  document.getElementById("sValK").textContent = s.potassium;
+  document.getElementById("barKVal").textContent = `${s.potassium} kg/ha`;
+  document.getElementById("barKFill").style.width = Math.min(100, (s.potassium / 80) * 100) + "%";
+
+  document.getElementById("ovMoisture").textContent = `Adequate (${Math.round(s.moisture * 100)}%)`;
+}
+
+// ==========================================
+// 4. SATELLITE & REMOTE SENSING
+// ==========================================
+async function fetchSatellite() {
+  try {
+    const res = await fetch(`${API_URL}/api/satellite?lat=${appStore.farm.lat}&lon=${appStore.farm.lon}&region=${encodeURIComponent(appStore.farm.region)}`);
+    if (res.ok) {
+      const data = await res.json();
+      appStore.satellite = data;
+      document.getElementById("ovNdvi").textContent = `${data.ndvi} (${data.vegetation_health})`;
+      document.getElementById("kpiNdvi").textContent = data.ndvi;
+    }
+  } catch (err) {
+    console.warn("Satellite fetch error:", err);
+  }
+}
+
+function switchSatMetric(metric) {
+  document.querySelectorAll("[id^='satTab']").forEach(b => b.className = "btn btn-outline btn-sm");
+
+  const sat = appStore.satellite;
+  if (metric === "ndvi") {
+    document.getElementById("satTabNdvi").className = "btn btn-sm";
+    document.getElementById("satActiveTitle").textContent = "🌿 NDVI (Normalized Difference Vegetation Index)";
+    document.getElementById("satActiveValue").textContent = sat.ndvi;
+    document.getElementById("satActiveDesc").textContent = "Vegetation shows active photosynthesis and healthy canopy density.";
+    document.getElementById("satActiveExplanation").textContent = "NDVI values >0.6 indicate robust vegetative biomass with minimal water stress.";
+  } else if (metric === "moisture") {
+    document.getElementById("satTabMoist").className = "btn btn-sm";
+    document.getElementById("satActiveTitle").textContent = "💧 Root-Zone Soil Moisture Index";
+    document.getElementById("satActiveValue").textContent = sat.soil_moisture;
+    document.getElementById("satActiveDesc").textContent = "Volumetric water content in the active 5-10cm root zone.";
+    document.getElementById("satActiveExplanation").textContent = "Moisture index at 0.41 indicates adequate soil hydration for root tillering.";
+  } else if (metric === "lst") {
+    document.getElementById("satTabLst").className = "btn btn-sm";
+    document.getElementById("satActiveTitle").textContent = "🌡️ Land Surface Temperature (LST)";
+    document.getElementById("satActiveValue").textContent = `${sat.land_surface_temp}°C`;
+    document.getElementById("satActiveDesc").textContent = "Thermal radiation skin temperature of field surface.";
+    document.getElementById("satActiveExplanation").textContent = "Measured from thermal infrared bands (MODIS/Landsat) to detect canopy thermal stress.";
+  } else {
+    document.getElementById("satTabEvi").className = "btn btn-sm";
+    document.getElementById("satActiveTitle").textContent = "🍃 Enhanced Vegetation Index (EVI)";
+    document.getElementById("satActiveValue").textContent = sat.evi;
+    document.getElementById("satActiveDesc").textContent = "Optimized vegetation index with background soil canopy decoupling.";
+    document.getElementById("satActiveExplanation").textContent = "EVI reduces atmospheric canopy noise in high-biomass paddy fields.";
+  }
+}
+
+function renderSatelliteChart() {
+  const ctx = document.getElementById("satelliteChart");
+  if (!ctx) return;
+  if (satelliteChart) satelliteChart.destroy();
+
+  satelliteChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ["W-4", "W-3", "W-2", "W-1", "Current"],
+      datasets: [{
+        label: 'NDVI Index',
+        data: [0.55, 0.58, 0.62, 0.65, appStore.satellite.ndvi || 0.68],
+        borderColor: '#2E5A27',
+        backgroundColor: 'rgba(46,90,39,0.15)',
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
+}
+
+// ==========================================
+// 5. AI ADVISOR & CHAT
+// ==========================================
+function askAiQuestion(q) {
+  document.getElementById("chatInputText").value = q;
+  handleSendChat(new Event("submit"));
+}
+
+async function handleSendChat(e) {
+  if (e) e.preventDefault();
+  const input = document.getElementById("chatInputText");
+  const q = input.value.trim();
+  if (!q) return;
+
+  const box = document.getElementById("chatHistoryBox");
+  box.innerHTML += `<div class="chat-bubble user"><strong>You:</strong><br>${q}</div>`;
+  input.value = "";
+  box.scrollTop = box.scrollHeight;
+
+  // AI response typing indicator
+  const loadingBubble = document.createElement("div");
+  loadingBubble.className = "chat-bubble ai";
+  loadingBubble.innerHTML = "🌱 <em>AgriLink AI is analyzing verified farm telemetry...</em>";
+  box.appendChild(loadingBubble);
+  box.scrollTop = box.scrollHeight;
+
+  try {
+    const res = await fetch(`${API_URL}/api/ai-advisory`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        farm_info: appStore.farm,
+        weather_data: appStore.weather,
+        soil_data: appStore.soil,
+        satellite_data: appStore.satellite,
+        crop_recommendation: appStore.cropRecommendation || { recommended_crop: "rice", confidence: 0.89 },
+        disease_result: appStore.diseaseScan,
+        language: appStore.language
+      })
+    });
+    const data = await res.json();
+    loadingBubble.innerHTML = `
+      <strong>🌱 AgriLink Advisor:</strong><br>
+      ${data.field_condition_summary.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}<br><br>
+      <strong>💧 Action Plan:</strong><br>${data.recommended_actions.replace(/\n/g, '<br>')}
+    `;
+  } catch (err) {
+    loadingBubble.innerHTML = `
+      <strong>🌱 AgriLink Advisor:</strong><br>
+      Based on your soil pH (${appStore.soil.ph}) and temperature (${appStore.weather.temperature}°C), <strong>Rice (Paddy)</strong> remains optimal. Maintain scheduled irrigation intervals and avoid afternoon foliar sprays.
+    `;
+  }
+  box.scrollTop = box.scrollHeight;
+}
+
+// ==========================================
+// 6. GLOBAL FARM ANALYSIS WORKFLOW
+// ==========================================
+async function triggerFarmAnalysis(openDrawerNow = true) {
+  const drawer = document.getElementById("analysisDrawer");
+  if (openDrawerNow) drawer.classList.add("open");
+
+  document.getElementById("drawerProgress").style.display = "block";
+  document.getElementById("drawerResults").style.display = "none";
+
+  try {
+    const res = await fetch(`${API_URL}/api/crop-recommendation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nitrogen: appStore.soil.nitrogen,
+        phosphorus: appStore.soil.phosphorus,
+        potassium: appStore.soil.potassium,
+        temperature: appStore.weather.temperature || 29.5,
+        humidity: appStore.weather.humidity || 68,
+        ph: appStore.soil.ph,
+        rainfall: 180.0,
+        soil_moisture: appStore.soil.moisture,
+        farm_id: appStore.farm.id,
+        language: appStore.language
+      })
+    });
+    const data = await res.json();
+    appStore.cropRecommendation = data;
+
+    document.getElementById("drawerCrop").textContent = data.crop_localized || data.recommended_crop;
+    document.getElementById("drawerScore").textContent = `Model score: ${data.confidence.toFixed(2)}`;
+
+    const rList = document.getElementById("drawerReasons");
+    rList.innerHTML = "";
+    (data.reasons || []).forEach(r => {
+      const li = document.createElement("li");
+      li.textContent = r;
+      rList.appendChild(li);
+    });
+
+    document.getElementById("overviewAdvisorySummary").innerHTML = `
+      Based on current soil pH (${appStore.soil.ph}) and weather (${appStore.weather.temperature}°C), <strong>${data.crop_localized || data.recommended_crop}</strong> is the recommended crop with model score ${data.confidence.toFixed(2)}.
+    `;
+
+    document.getElementById("drawerProgress").style.display = "none";
+    document.getElementById("drawerResults").style.display = "flex";
+
+    showToast(`✓ Analysis complete: ${data.crop_localized || data.recommended_crop} recommended.`);
+  } catch (err) {
+    console.warn("Analysis fallback", err);
+  }
+}
+
+// ==========================================
+// 7. DISEASE DETECTION WORKFLOW
+// ==========================================
+let uploadedLeafFile = null;
+
+function handleLeafFileSelect(input) {
+  if (input.files && input.files[0]) {
+    uploadedLeafFile = input.files[0];
+    const preview = document.getElementById("leafImgPreview");
+    preview.src = URL.createObjectURL(uploadedLeafFile);
+    preview.style.display = "block";
+    document.getElementById("btnAnalyzeLeaf").style.display = "inline-flex";
+    document.getElementById("btnRemoveLeaf").style.display = "inline-flex";
+  }
+}
+
+function removeUploadedLeaf() {
+  uploadedLeafFile = null;
+  document.getElementById("fileLeafInput").value = "";
+  document.getElementById("leafImgPreview").style.display = "none";
+  document.getElementById("btnAnalyzeLeaf").style.display = "none";
+  document.getElementById("btnRemoveLeaf").style.display = "none";
+  document.getElementById("diseaseResultDetails").style.display = "none";
+  document.getElementById("diseaseResultEmptyState").style.display = "block";
+}
+
+async function analyzeUploadedLeaf() {
+  if (!uploadedLeafFile) return;
+  const formData = new FormData();
+  formData.append("file", uploadedLeafFile);
+
+  try {
+    const res = await fetch(`${API_URL}/api/disease?farm_id=${appStore.farm.id}`, {
+      method: "POST",
+      body: formData
+    });
+    const data = await res.json();
+    appStore.diseaseScan = data;
+
+    document.getElementById("diagName").textContent = data.diagnosis;
+    document.getElementById("diagScore").textContent = `Score: ${data.confidence.toFixed(2)}`;
+    document.getElementById("diagSymptoms").textContent = data.symptoms;
+
+    const actList = document.getElementById("diagActions");
+    actList.innerHTML = "";
+    (data.recommended_actions || []).forEach(a => {
+      const li = document.createElement("li");
+      li.textContent = a;
+      actList.appendChild(li);
+    });
+
+    document.getElementById("diseaseResultEmptyState").style.display = "none";
+    document.getElementById("diseaseResultDetails").style.display = "block";
+    showToast(`🔬 Detection complete: ${data.diagnosis}`);
+  } catch (err) {
+    console.warn("Disease diagnostic error:", err);
+  }
+}
+
+// Synthetic in-memory canvas for instant demo tests
+function generateSampleLeafBlob(type) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 224; canvas.height = 224;
+  const ctx = canvas.getContext("2d");
+
+  if (type.includes("blast")) {
+    ctx.fillStyle = "#2E7D32"; ctx.fillRect(0, 0, 224, 224);
+    ctx.fillStyle = "#4CAF50"; ctx.beginPath(); ctx.ellipse(112, 112, 80, 95, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#A08264";
+    [[80, 70], [130, 110], [90, 150]].forEach(pt => {
+      ctx.beginPath(); ctx.ellipse(pt[0], pt[1], 16, 8, 0, 0, Math.PI * 2); ctx.fill();
+    });
+  } else if (type.includes("blight")) {
+    ctx.fillStyle = "#388E3C"; ctx.fillRect(0, 0, 224, 224);
+    ctx.fillStyle = "#43A047"; ctx.beginPath(); ctx.ellipse(112, 112, 85, 85, 0, 0, Math.PI * 2); ctx.fill();
+    [35, 25, 15, 8].forEach((r, i) => {
+      ctx.fillStyle = i % 2 === 0 ? "#654321" : "#8B5A2B";
+      ctx.beginPath(); ctx.ellipse(112, 112, r, r, 0, 0, Math.PI * 2); ctx.fill();
+    });
+  } else {
+    ctx.fillStyle = "#228B22"; ctx.fillRect(0, 0, 224, 224);
+    ctx.fillStyle = "#32CD32"; ctx.beginPath(); ctx.ellipse(112, 112, 85, 95, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#98FB98"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(112, 20); ctx.lineTo(112, 204); ctx.stroke();
+  }
+  return new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.92));
+}
+
+async function runDemoDiseaseTest(assetName, label) {
+  const blob = await generateSampleLeafBlob(assetName);
+  const file = new File([blob], assetName, { type: "image/jpeg" });
+  uploadedLeafFile = file;
+
+  const preview = document.getElementById("leafImgPreview");
+  preview.src = URL.createObjectURL(file);
+  preview.style.display = "block";
+  document.getElementById("btnAnalyzeLeaf").style.display = "inline-flex";
+  document.getElementById("btnRemoveLeaf").style.display = "inline-flex";
+
+  analyzeUploadedLeaf();
+}
+
+// ==========================================
+// 8. INSIGHTS & HISTORY
+// ==========================================
+async function fetchHistoryLogs() {
+  try {
+    const res = await fetch(`${API_URL}/api/history?limit=6`);
+    if (res.ok) {
+      const data = await res.json();
+      const tbody = document.getElementById("insightsHistoryTableBody");
+      tbody.innerHTML = "";
+
+      (data.advisories || []).forEach(a => {
+        const row = document.createElement("tr");
+        const dt = a.created_at ? new Date(a.created_at).toLocaleDateString() : "Today";
+        row.innerHTML = `
+          <td>${dt}</td>
+          <td><code>${a.farm_id}</code></td>
+          <td><strong>${a.recommended_crop}</strong></td>
+          <td>${a.confidence.toFixed(2)}</td>
+          <td><span class="badge badge-demo">${a.language || 'en'}</span></td>
+          <td>${Array.isArray(a.reasons) ? a.reasons[0] : (a.reasons || "Agro-climatic suitability match")}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+  } catch (err) {
+    console.warn("History logs fetch error:", err);
+  }
+}
+
+function renderInsightsChart() {
+  const ctx = document.getElementById("insightsChart");
+  if (!ctx) return;
+  if (insightsChart) insightsChart.destroy();
+
+  insightsChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Rice (Paddy)', 'Cotton', 'Maize', 'Sugarcane', 'Chickpea'],
+      datasets: [{
+        label: 'Historical Recommendation Frequency (%)',
+        data: [45, 22, 18, 10, 5],
+        backgroundColor: '#2E5A27'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
+}
+
+// ==========================================
+// 9. FARM MANAGEMENT & PROFILES
+// ==========================================
+const FARMS_DB = {
+  "farm-telangana-01": { name: "Sri Venkateswara Organic Farm", region: "Telangana", lat: 17.3850, lon: 78.4867, area: 4.5, soil: "Black Cotton Soil (Vertisol)" },
+  "farm-ap-02": { name: "Krishna Delta Field", region: "Andhra Pradesh", lat: 16.5062, lon: 80.6480, area: 6.0, soil: "Red Sandy Loam (Alfisol)" },
+  "farm-punjab-03": { name: "Golden Harvest Farm", region: "Punjab", lat: 30.9010, lon: 75.8573, area: 8.0, soil: "Alluvial Soil (Inceptisol)" },
+  "farm-mh-04": { name: "Vidarbha Cotton Estate", region: "Maharashtra", lat: 21.1458, lon: 79.0882, area: 7.5, soil: "Black Cotton Soil (Vertisol)" },
+  "farm-ka-05": { name: "Dharwad Agro Field", region: "Karnataka", lat: 15.3647, lon: 75.1240, area: 5.0, soil: "Red Laterite Soil (Oxisol)" }
+};
+
+function switchFarmProfile(farmId) {
+  const f = FARMS_DB[farmId];
+  if (!f) return;
+
+  appStore.farm.id = farmId;
+  appStore.farm.name = f.name;
+  appStore.farm.region = f.region;
+  appStore.farm.lat = f.lat;
+  appStore.farm.lon = f.lon;
+  appStore.farm.area = f.area;
+  appStore.farm.soilType = f.soil;
+
+  document.getElementById("headerFarmName").textContent = f.name;
+  document.getElementById("headerFarmRegion").textContent = `${f.region}`;
+  document.getElementById("overviewFarmSubtitle").textContent = `${f.name} • ${f.region} • ${f.area} Acres`;
+
+  document.getElementById("fpName").textContent = f.name;
+  document.getElementById("fpRegion").textContent = f.region;
+  document.getElementById("fpArea").textContent = f.area;
+  document.getElementById("fpCoords").textContent = `${f.lat.toFixed(4)}° N, ${f.lon.toFixed(4)}° E`;
+  document.getElementById("fpSoilType").textContent = f.soil;
+
+  if (map) {
+    map.setView([f.lat, f.lon], 14);
+    mapMarker.setLatLng([f.lat, f.lon]);
+    drawPolygon(f.lat, f.lon);
+  }
+
+  fetchWeather();
+  fetchSatellite();
+  showToast(`🌾 Switched to ${f.name} (${f.region})`);
+}
+
+function openAddFarmModal() { openModal('modalAddFarm'); }
+function handleSaveNewFarm(e) {
+  e.preventDefault();
+  const name = document.getElementById("mFarmName").value;
+  const region = document.getElementById("mFarmRegion").value;
+  const area = parseFloat(document.getElementById("mFarmArea").value);
+
+  const newId = `farm-custom-${Date.now()}`;
+  FARMS_DB[newId] = { name: name, region: region, lat: 17.3850, lon: 78.4867, area: area, soil: "Standard Loam" };
+
+  const opt = document.createElement("option");
+  opt.value = newId;
+  opt.textContent = `🌾 ${name} (${region})`;
+  opt.selected = true;
+  document.getElementById("farmSelectorDropdown").appendChild(opt);
+
+  closeModal('modalAddFarm');
+  switchFarmProfile(newId);
+  showToast(`✅ Created new farm '${name}'!`);
+}
+
+function changeLanguage(lang) {
+  appStore.language = lang;
+  showToast(`Language set to ${lang === 'te' ? 'Telugu (తెలుగు)' : lang === 'hi' ? 'Hindi (हिन्दी)' : 'English'}`);
+}
+
+// ==========================================
+// INITIAL STARTUP
+// ==========================================
+window.addEventListener("DOMContentLoaded", () => {
+  initLeafletMap();
+  fetchWeather();
+  fetchSatellite();
+  updateSoilUI();
+  fetchHistoryLogs();
+  setTimeout(() => triggerFarmAnalysis(false), 500);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,123 @@
+"""
+Localization Dictionary & Translator Helper for AgriLink
+Supports: English (en), Telugu (te), Hindi (hi)
+"""
+
+from typing import Dict, Any
+
+TRANSLATIONS: Dict[str, Dict[str, str]] = {
+    "en": {
+        "app_title": "AgriLink — Interoperable Digital Agriculture Platform",
+        "app_subtitle": "AI-Powered Climate-Resilient Agricultural Intelligence & Standardized Public Good",
+        "location": "Location & Field",
+        "weather": "Live Weather & 7-Day Forecast",
+        "soil_profile": "Soil Chemical & Physical Profile",
+        "satellite_env": "Satellite & Remote Sensing (NDVI / Moisture)",
+        "crop_recommendation": "Crop Recommendation Engine",
+        "disease_detection": "Vision Crop Disease Diagnostic",
+        "ai_advisor": "AI Agricultural Advisor",
+        "interoperability": "Interoperable AgriData Standard",
+        "analyze_farm": "Analyze Farm & Generate Advisory",
+        "loading": "Analyzing agricultural context...",
+        "estimated": "Estimated",
+        "user_provided": "User-provided",
+        "demo_data": "Demo data",
+        "suitable": "Suitable",
+        "caution": "Caution Needed",
+        "not_suitable": "High Risk",
+        "optimal": "Optimal",
+        "temperature": "Temperature",
+        "humidity": "Humidity",
+        "rainfall": "Rainfall",
+        "wind": "Wind Speed",
+        "confidence": "Model Confidence",
+        "why_this_crop": "Why this crop?",
+        "recommended_crop": "Recommended Crop",
+        "disclaimer_disease": "Note: AI visual screening only. Confirm with local agricultural extension officer before chemical treatment.",
+    },
+    "te": {
+        "app_title": "అగ్రిలింక్ — డిజిటల్ వ్యవసాయ వేదిక",
+        "app_subtitle": "రైతులకు ఏఐ ఆధారిత వాతావరణ మరియు పంట సలహా వ్యవస్థ",
+        "location": "పొలం స్థానం & ప్రాంతం",
+        "weather": "ప్రత్యక్ష వాతావరణం & 7 రోజుల సూచన",
+        "soil_profile": "నేల పోషకాలు & లక్షణాలు (N-P-K & pH)",
+        "satellite_env": "ఉపగ్రహ సమాచారం & పచ్చదనం సూచిక (NDVI)",
+        "crop_recommendation": "అనుకూల పంటల సిఫార్సు ఇంజిన్",
+        "disease_detection": "ఆకు తెగులు గుర్తింపు (AI స్కానర్)",
+        "ai_advisor": "ఏఐ వ్యవసాయ సలహాదారు",
+        "interoperability": "ప్రామాణిక డేటా మార్పిడి (AgriData)",
+        "analyze_farm": "పొలాన్ని విశ్లేషించి సలహా పొందండి",
+        "loading": "సమాచారాన్ని విశ్లేషిస్తోంది...",
+        "estimated": "అంచనా వేసినది",
+        "user_provided": "రైతు నమోదు చేసినది",
+        "demo_data": "డెమో సమాచారం",
+        "suitable": "అనుకూలం",
+        "caution": "జాగ్రత్త అవసరం",
+        "not_suitable": "అధిక ప్రమాదం",
+        "optimal": "సరైన స్థాయిలో ఉంది",
+        "temperature": "ఉష్ణోగ్రత",
+        "humidity": "తేమ శాతం",
+        "rainfall": "వర్షపాతం",
+        "wind": "గాలి వేగం",
+        "confidence": "ఖచ్చితత్వ అంచనా",
+        "why_this_crop": "ఈ పంట ఎందుకు అనుకూలం?",
+        "recommended_crop": "సిఫార్సు చేయబడిన పంట",
+        "disclaimer_disease": "గమనిక: ఇది ఏఐ ప్రాథమిక సూచన మాత్రమే. రసాయన మందులు వాడే ముందు స్థానిక వ్యవసాయ అధికారిని సంప్రదించండి.",
+    },
+    "hi": {
+        "app_title": "एग्रीलिंक — डिजिटल कृषि प्लेटफॉर्म",
+        "app_subtitle": "एआई-संचालित मौसम, मृदा और फसल सलाहकार प्रणाली",
+        "location": "खेत का स्थान और क्षेत्र",
+        "weather": "सटीक मौसम और 7-दिवसीय पूर्वानुमान",
+        "soil_profile": "मृदा पोषक तत्व और स्वास्थ्य (N-P-K & pH)",
+        "satellite_env": "उपग्रह संकेतक और वनस्पति स्वास्थ्य (NDVI)",
+        "crop_recommendation": "उचित फसल सिफारिश इंजन",
+        "disease_detection": "पत्ती रोग पहचान स्कैनर",
+        "ai_advisor": "एआई कृषि विशेषज्ञ सलाहकार",
+        "interoperability": "मानकीकृत डेटा विनिमय (AgriData)",
+        "analyze_farm": "खेत का विश्लेषण करें और सलाह प्राप्त करें",
+        "loading": "कृषि डेटा का विश्लेषण हो रहा है...",
+        "estimated": "अनुमानित",
+        "user_provided": "किसान द्वारा दर्ज",
+        "demo_data": "डेमो डेटा",
+        "suitable": "उपयुक्त",
+        "caution": "सावधानी आवश्यक",
+        "not_suitable": "उच्च जोखिम",
+        "optimal": "उत्कृष्ट",
+        "temperature": "तापमान",
+        "humidity": "आर्द्रता",
+        "rainfall": "वर्षा",
+        "wind": "हवा की गति",
+        "confidence": "मॉडल सटीकता",
+        "why_this_crop": "यह फसल क्यों उपयुक्त है?",
+        "recommended_crop": "सिफारिश की गई फसल",
+        "disclaimer_disease": "नोट: यह केवल एआई प्रारंभिक जांच है। रासायनिक उपचार से पहले कृषि विशेषज्ञ की सलाह लें।",
+    }
+}
+
+CROP_NAMES_TRANSLATION: Dict[str, Dict[str, str]] = {
+    "rice": {"en": "Rice (Paddy)", "te": "వరి (వరి ధాన్యం)", "hi": "धान / चावल"},
+    "wheat": {"en": "Wheat", "te": "గోధుమలు", "hi": "गेहूं"},
+    "maize": {"en": "Maize (Corn)", "te": "మొక్కజొన్న", "hi": "मक्का"},
+    "cotton": {"en": "Cotton", "te": "పత్తి", "hi": "कपास"},
+    "sugarcane": {"en": "Sugarcane", "te": "చెరకు", "hi": "गन्ना"},
+    "chickpea": {"en": "Chickpea (Bengal Gram)", "te": "శనగలు", "hi": "चना"},
+    "groundnut": {"en": "Groundnut (Peanut)", "te": "వేరుశనగ", "hi": "मूंगफली"},
+    "mustard": {"en": "Mustard", "te": "ఆవాలు", "hi": "सरसों"},
+    "sorghum": {"en": "Sorghum (Jowar)", "te": "జొన్నలు", "hi": "ज्वार"},
+    "pearl_millet": {"en": "Pearl Millet (Bajra)", "te": "సజ్జలు", "hi": "बाजरा"},
+    "soybean": {"en": "Soybean", "te": "సోయాబీన్", "hi": "सोयाबीन"},
+    "turmeric": {"en": "Turmeric", "te": "పసుపు", "hi": "हल्दी"},
+    "chilli": {"en": "Red Chilli", "te": "మిరప", "hi": "मिर्च"},
+    "pigeonpea": {"en": "Pigeonpea (Red Gram / Arhar)", "te": "కందులు", "hi": "अरहर / तुअर दाल"},
+    "coffee": {"en": "Coffee", "te": "కాఫీ", "hi": "कॉफ़ी"},
+}
+
+
+def get_translation_bundle(lang: str = "en") -> Dict[str, Any]:
+    lang_code = lang.lower() if lang.lower() in TRANSLATIONS else "en"
+    return {
+        "lang": lang_code,
+        "strings": TRANSLATIONS[lang_code],
+        "crop_names": {k: v.get(lang_code, v["en"]) for k, v in CROP_NAMES_TRANSLATION.items()}
+    }
