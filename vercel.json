@@ -1,17 +1,25 @@
 {
   "version": 2,
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/:match*",
-      "destination": "/api/index.py"
+      "src": "/api/(.*)",
+      "dest": "api/index.py?path=$1"
     },
     {
-      "source": "/docs",
-      "destination": "/api/index.py"
+      "src": "/docs",
+      "dest": "api/index.py?path=docs"
     },
     {
-      "source": "/openapi.json",
-      "destination": "/api/index.py"
+      "src": "/openapi.json",
+      "dest": "api/index.py?path=openapi.json"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "index.html"
     }
   ]
 }
